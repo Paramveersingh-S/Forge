@@ -1,0 +1,19 @@
+# Mistral-7B-Instruct recipe
+model:
+  name: mistralai/Mistral-7B-Instruct-v0.3
+  type: mistral
+  context_length: 8192
+  torch_dtype: auto
+
+lora:
+  r: 64
+  alpha: 16
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj

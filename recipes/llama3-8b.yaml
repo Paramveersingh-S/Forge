@@ -1,0 +1,21 @@
+# Llama-3.1-8B-Instruct recipe
+# Extends this in your forge.yaml: extends: [recipes/llama3-8b.yaml]
+
+model:
+  name: meta-llama/Llama-3.1-8B-Instruct
+  type: llama
+  context_length: 8192
+  torch_dtype: auto
+
+lora:
+  r: 64
+  alpha: 16
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj

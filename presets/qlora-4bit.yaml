@@ -1,0 +1,11 @@
+# QLoRA 4-bit quantization preset
+# Extends this in your forge.yaml: extends: [presets/qlora-4bit.yaml]
+
+training:
+  quantization: 4bit
+  gradient_checkpointing: true
+
+lora:
+  r: 64
+  alpha: 16
+  dropout: 0.05

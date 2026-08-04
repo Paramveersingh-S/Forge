@@ -1,0 +1,13 @@
+# SFT Chat preset — defaults for instruction-following fine-tuning
+training:
+  method: sft
+  batch_size: 4
+  learning_rate: 2e-4
+  max_seq_length: 2048
+  warmup_ratio: 0.03
+  lr_scheduler: cosine
+  weight_decay: 0.01
+  gradient_accumulation_steps: 4
+
+data:
+  format: sharegpt
