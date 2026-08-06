@@ -441,49 +441,6 @@ forge/
 
 ---
 
-## Step-by-Step Implementation
-
-### Phase 1: Foundation (Weeks 1–4)
-
-| Step | Component | Description |
-|:---|:---|:---|
-| 1.1 | `forge-core/` | Rust core — layer streaming I/O with mmap, async DMA, pinned buffers. PyO3 bindings. |
-| 1.2 | `src/forge/config/` | Composable YAML config engine with fragment inheritance and split Pydantic schemas. |
-| 1.3 | `src/forge/cli/` | Typer CLI — `forge init`, `forge train`, `forge doctor`, `forge --help`. |
-| 1.4 | `src/forge/trainer/` | Trainer registry + SFT trainer. Base abstractions for all training methods. |
-| 1.5 | `src/forge/data/` | Data loader, format detection, basic validation. |
-
-### Phase 2: Training Methods + Kernels (Weeks 5–8)
-
-| Step | Component | Description |
-|:---|:---|:---|
-| 2.1 | `src/forge/trainer/dpo.py` | DPO trainer with streaming-compatible reference model. |
-| 2.2 | `src/forge/trainer/grpo.py` | GRPO trainer with speculative layer caching. |
-| 2.3 | `src/forge/trainer/kto.py` | KTO trainer for unpaired preference data. |
-| 2.4 | `src/forge/kernels/` | Fused LoRA forward, fused cross-entropy, quantized matmul (Triton). |
-| 2.5 | `src/forge/stream/` | Python-side layer streaming planner and Rust core integration. |
-
-### Phase 3: Tracking + Eval (Weeks 9–12)
-
-| Step | Component | Description |
-|:---|:---|:---|
-| 3.1 | `src/forge/tracking/` | SQLite experiment database, metric logging, run comparison API. |
-| 3.2 | `src/forge/eval/` | Evaluation engine with built-in benchmark suites. |
-| 3.3 | `src/forge/eval/ship_gate.py` | SHIP / DON'T SHIP verdict with noise-floor measurement. |
-| 3.4 | `src/forge/team/` | Team workspace management, RBAC, shared configs. |
-| 3.5 | Integration tests | End-to-end training pipeline tests with tiny models. |
-
-### Phase 4: Governance + Deploy (Weeks 13–16)
-
-| Step | Component | Description |
-|:---|:---|:---|
-| 4.1 | `src/forge/governance/` | ML-BOM, in-toto attestation, compliance documentation. |
-| 4.2 | `src/forge/deploy/` | Export to GGUF/SafeTensors/ONNX, push to Ollama/HF Hub. |
-| 4.3 | `src/forge/governance/signing.py` | ed25519 adapter signing, Merkle root, backdoor scanning. |
-| 4.4 | Documentation | Full API docs, tutorials, migration guide from Soup/Axolotl. |
-| 4.5 | Release | PyPI publication, GitHub release, announcement. |
-
----
 
 ## Supported Models (v1 Target)
 
