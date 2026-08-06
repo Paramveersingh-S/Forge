@@ -1,0 +1,28 @@
+# GRPO preset — Group Relative Policy Optimization
+# Reward-model-free RLHF using self-generated reward signals
+# Great for reasoning and math tasks
+#
+# Usage in forge.yaml:
+#   extends:
+#     - recipes/llama3-8b.yaml
+#     - presets/grpo.yaml
+
+training:
+  method: grpo
+  quantization: "4bit"
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 1e-5
+  max_steps: 500
+  max_seq_length: 2048
+  warmup_ratio: 0.03
+  lr_scheduler: cosine
+  weight_decay: 0.01
+  gradient_checkpointing: true
+  stream_layers: false  # GRPO is incompatible with layer streaming
+  output_dir: ./output-grpo
+
+lora:
+  r: 32
+  alpha: 16
+  dropout: 0.05

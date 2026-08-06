@@ -74,8 +74,12 @@ def _ensure_trainers_loaded() -> None:
     if _REGISTRY:
         return  # Already loaded
 
-    # Import trainer modules — each one calls @register_trainer
-    try:
-        from forge.trainer import sft  # noqa: F401
-    except ImportError:
-        pass  # Training stack not installed
+    # Import trainer modules — each one calls @register_trainer.
+    # Imports are individual try/except so a missing optional dep
+    # (e.g. trl without GRPO support) doesn't block other trainers.
+    _trainer_modules = ["sft", "dpo", "grpo", "kto", "orpo"]
+    for mod_name in _trainer_modules:
+        try:
+            __import__(f"forge.trainer.{mod_name}")
+        except ImportError:
+            pass  # Training stack not installed or method not available

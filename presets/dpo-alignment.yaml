@@ -1,0 +1,26 @@
+# DPO Alignment preset — Direct Preference Optimization
+# Use with paired preference datasets (chosen/rejected)
+#
+# Usage in forge.yaml:
+#   extends:
+#     - recipes/llama3-8b.yaml
+#     - presets/dpo-alignment.yaml
+
+training:
+  method: dpo
+  quantization: "4bit"
+  batch_size: 2
+  gradient_accumulation_steps: 4
+  learning_rate: 5e-5
+  max_steps: 500
+  max_seq_length: 1024
+  warmup_ratio: 0.1
+  lr_scheduler: cosine
+  weight_decay: 0.0
+  gradient_checkpointing: true
+  output_dir: ./output-dpo
+
+lora:
+  r: 16
+  alpha: 16
+  dropout: 0.05

@@ -1,0 +1,27 @@
+# ORPO preset — Odds-Ratio Preference Optimization
+# Combines SFT + alignment in one step, no reference model needed
+# More memory-efficient than DPO
+#
+# Usage in forge.yaml:
+#   extends:
+#     - recipes/llama3-8b.yaml
+#     - presets/orpo.yaml
+
+training:
+  method: orpo
+  quantization: "4bit"
+  batch_size: 2
+  gradient_accumulation_steps: 4
+  learning_rate: 8e-6
+  max_steps: 1000
+  max_seq_length: 1024
+  warmup_ratio: 0.1
+  lr_scheduler: cosine
+  weight_decay: 0.0
+  gradient_checkpointing: true
+  output_dir: ./output-orpo
+
+lora:
+  r: 16
+  alpha: 16
+  dropout: 0.05
