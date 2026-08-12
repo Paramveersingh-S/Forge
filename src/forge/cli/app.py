@@ -163,8 +163,77 @@ def experiment(
 ) -> None:
     """Manage experiments — list, compare, export."""
     console.print(f"[bold blue]forge experiment[/bold blue] — {action}")
-    # TODO: Implement experiment tracking
+    # TODO: Implement experiment tracking (Phase 3)
     console.print("[yellow]⚠[/yellow] Experiment tracking not yet implemented.")
+
+
+@app.command()
+def data(
+    path: str = typer.Argument(..., help="Path to the dataset file."),
+    action: str = typer.Option(
+        "inspect",
+        "--action",
+        "-a",
+        help="Action: inspect, quality, convert, dedup.",
+    ),
+    format: str = typer.Option(None, "--format", "-f", help="Override format detection."),
+    target_format: str = typer.Option(
+        "openai",
+        "--target-format",
+        help="Target format for convert action.",
+    ),
+    output: str = typer.Option(None, "--output", "-o", help="Output file for convert/dedup."),
+) -> None:
+    """Inspect, validate, and transform training datasets."""
+    console.print(f"[bold blue]forge data[/bold blue] — {action}")
+
+    if action == "inspect":
+        from forge.data.loader import detect_format, get_stats
+
+        fmt = detect_format(path)
+        console.print(f"  Format: [cyan]{fmt}[/cyan]")
+        stats = get_stats(path)
+        console.print(f"  Samples: {stats.get('num_samples', 'N/A')}")
+        console.print(f"  Columns: {stats.get('columns', [])}")
+        if stats.get("sample"):
+            import json
+
+            console.print(f"  Sample:  {json.dumps(stats['sample'], indent=2)[:500]}")
+
+    elif action == "quality":
+        from forge.data.quality import compute_quality_report, print_quality_report
+
+        report = compute_quality_report(path)
+        print_quality_report(report)
+
+    elif action == "convert":
+        from forge.data.loader import detect_format
+        from forge.data.formats import convert_record
+
+        src_fmt = format or detect_format(path)
+        console.print(f"  Converting: {src_fmt} → {target_format}")
+        console.print(f"  Output:     {output or '<stdout>'}")
+        # TODO: Full file conversion (streaming, not in-memory)
+        console.print("[yellow]⚠[/yellow] Full file conversion coming soon.")
+
+    elif action == "dedup":
+        console.print(f"  Dataset: {path}")
+        # TODO: Wire up MinHash dedup
+        console.print("[yellow]⚠[/yellow] Deduplication coming soon. (pip install 'forge-llm[data]')")
+
+    else:
+        console.print(f"[red]✗ Unknown action: {action}[/red]")
+        console.print("  Available: inspect, quality, convert, dedup")
+
+
+@app.command()
+def profile() -> None:
+    """Benchmark storage tiers for layer streaming (RAM vs NVMe vs GPU)."""
+    from forge.stream.profiler import profile_tiers, print_tier_report
+
+    console.print("[bold blue]forge profile[/bold blue] — benchmarking storage tiers...\n")
+    results = profile_tiers()
+    print_tier_report(results)
 
 
 # --- Entry point --------------------------------------------------------------
@@ -177,3 +246,4 @@ def run() -> None:
 
 if __name__ == "__main__":
     run()
+
