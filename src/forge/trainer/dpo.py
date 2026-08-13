@@ -141,6 +141,14 @@ class DPOTrainer:
 
         dataset = load_dataset("json", data_files=config.data.path, split="train")
 
+        # Add tracking callback
+        from forge.tracking.callback import ForgeTrainerCallback
+        tracking_callback = ForgeTrainerCallback(
+            experiment_name=config.project_name or config.model.name.split("/")[-1],
+            config=config.model_dump(),
+            tags=config.tags + ["dpo"],
+        )
+
         # Create DPO trainer
         trainer = TRLDPOTrainer(
             model=model,
@@ -148,6 +156,7 @@ class DPOTrainer:
             args=dpo_config,
             train_dataset=dataset,
             processing_class=tokenizer,
+            callbacks=[tracking_callback],
         )
 
         # Train

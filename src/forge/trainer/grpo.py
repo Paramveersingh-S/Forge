@@ -153,6 +153,14 @@ class GRPOTrainer:
                 rewards.append(score)
             return rewards
 
+        # Add tracking callback
+        from forge.tracking.callback import ForgeTrainerCallback
+        tracking_callback = ForgeTrainerCallback(
+            experiment_name=config.project_name or config.model.name.split("/")[-1],
+            config=config.model_dump(),
+            tags=config.tags + ["grpo"],
+        )
+
         # Create GRPO trainer
         trainer = TRLGRPOTrainer(
             model=model,
@@ -160,6 +168,7 @@ class GRPOTrainer:
             train_dataset=dataset,
             processing_class=tokenizer,
             reward_funcs=default_reward_fn,
+            callbacks=[tracking_callback],
         )
 
         # Train

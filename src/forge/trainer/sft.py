@@ -126,6 +126,14 @@ class SFTTrainer:
         from datasets import load_dataset
         dataset = load_dataset("json", data_files=config.data.path, split="train")
 
+        # Add tracking callback
+        from forge.tracking.callback import ForgeTrainerCallback
+        tracking_callback = ForgeTrainerCallback(
+            experiment_name=config.project_name or config.model.name.split("/")[-1],
+            config=config.model_dump(),
+            tags=config.tags + ["sft"],
+        )
+
         # Create trainer
         trainer = TRLSFTTrainer(
             model=model,
@@ -133,6 +141,7 @@ class SFTTrainer:
             train_dataset=dataset,
             tokenizer=tokenizer,
             max_seq_length=config.training.max_seq_length,
+            callbacks=[tracking_callback],
         )
 
         # Train

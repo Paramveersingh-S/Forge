@@ -144,6 +144,14 @@ class KTOTrainer:
 
         dataset = load_dataset("json", data_files=config.data.path, split="train")
 
+        # Add tracking callback
+        from forge.tracking.callback import ForgeTrainerCallback
+        tracking_callback = ForgeTrainerCallback(
+            experiment_name=config.project_name or config.model.name.split("/")[-1],
+            config=config.model_dump(),
+            tags=config.tags + ["kto"],
+        )
+
         # Create KTO trainer
         trainer = TRLKTOTrainer(
             model=model,
@@ -151,6 +159,7 @@ class KTOTrainer:
             args=kto_config,
             train_dataset=dataset,
             processing_class=tokenizer,
+            callbacks=[tracking_callback],
         )
 
         # Train
