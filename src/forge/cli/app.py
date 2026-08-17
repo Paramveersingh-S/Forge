@@ -236,6 +236,176 @@ def profile() -> None:
     print_tier_report(results)
 
 
+@app.command()
+def dashboard(
+    host: str = typer.Option("127.0.0.1", "--host", "-H", help="Server host."),
+    port: int = typer.Option(8377, "--port", "-p", help="Server port."),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Don't open browser automatically."),
+) -> None:
+    """Launch the Forge web dashboard (experiment tracking + live training monitor)."""
+    try:
+        import uvicorn
+    except ImportError:
+        console.print(
+            "[red]✗ Missing dashboard dependency: uvicorn[/red]\n"
+            "  Install with: pip install 'forge-llm[dashboard]'"
+        )
+        raise SystemExit(1)
+
+    from forge.server.app import create_app
+
+    console.print("[bold blue]forge dashboard[/bold blue]")
+    console.print(f"  Server:  http://{host}:{port}")
+    console.print(f"  API:     http://{host}:{port}/api/system/status")
+    console.print(f"  Press [cyan]Ctrl+C[/cyan] to stop.\n")
+
+    if not no_browser:
+        import webbrowser
+        import threading
+
+        def _open_browser() -> None:
+            import time
+            time.sleep(1.5)  # Wait for server to start
+            webbrowser.open(f"http://{host}:{port}")
+
+        threading.Thread(target=_open_browser, daemon=True).start()
+
+    forge_app = create_app()
+    uvicorn.run(forge_app, host=host, port=port, log_level="info")
+
+
+@app.command()
+def experiment(
+    action: str = typer.Argument("list", help="Action: list, compare, delete, show."),
+    ids: str = typer.Option(None, "--ids", "-i", help="Comma-separated experiment IDs."),
+    metric: str = typer.Option(None, "--metric", "-m", help="Metric key for leaderboard."),
+    top_k: int = typer.Option(10, "--top", "-k", help="Number of top experiments."),
+    status: str = typer.Option(None, "--status", "-s", help="Filter by status."),
+) -> None:
+    """Manage experiments — list, compare, delete, show."""
+    from rich.table import Table
+
+    from forge.tracking import get_db
+
+    db = get_db()
+
+    if action == "list":
+        experiments = db.list_experiments(status=status, limit=top_k)
+        if not experiments:
+            console.print("[dim]No experiments found.[/dim]")
+            return
+
+        table = Table(title="Experiments", show_lines=True)
+        table.add_column("ID", style="cyan", no_wrap=True)
+        table.add_column("Name", style="bold")
+        table.add_column("Status")
+        table.add_column("Created")
+        table.add_column("Tags")
+
+        for exp in experiments:
+            status_style = {
+                "running": "[yellow]running[/yellow]",
+                "completed": "[green]completed[/green]",
+                "failed": "[red]failed[/red]",
+            }.get(exp["status"], exp["status"])
+
+            created = exp["created_at"][:19] if exp["created_at"] else "—"
+            tags = ", ".join(exp.get("tags") or []) or "—"
+            table.add_row(exp["id"], exp["name"], status_style, created, tags)
+
+        console.print(table)
+
+    elif action == "show":
+        if not ids:
+            console.print("[red]✗ --ids required for 'show' action[/red]")
+            return
+
+        exp = db.get_experiment(ids.split(",")[0])
+        if not exp:
+            console.print(f"[red]✗ Experiment '{ids}' not found[/red]")
+            return
+
+        console.print(f"\n[bold]{exp['name']}[/bold] ({exp['id']})")
+        console.print(f"  Status:  {exp['status']}")
+        console.print(f"  Created: {exp['created_at']}")
+
+        latest = db.get_latest_metrics(exp["id"])
+        if latest:
+            console.print("\n  [bold]Latest Metrics:[/bold]")
+            for key, val in sorted(latest.items()):
+                console.print(f"    {key}: {val:.6f}")
+
+    elif action == "compare":
+        if not ids:
+            console.print("[red]✗ --ids required for 'compare' action[/red]")
+            console.print("  Usage: forge experiment compare --ids abc123,def456")
+            return
+
+        from forge.tracking.compare import compare_experiments as compare_fn
+
+        exp_ids = [i.strip() for i in ids.split(",")]
+        result = compare_fn(db, exp_ids)
+
+        if not result["experiments"]:
+            console.print("[red]✗ No matching experiments found[/red]")
+            return
+
+        table = Table(title="Experiment Comparison", show_lines=True)
+        table.add_column("Metric", style="bold")
+        for exp in result["experiments"]:
+            table.add_column(f"{exp['name']}\n({exp['id']})", justify="right")
+
+        for key in result["metric_keys"]:
+            values = result["metrics"][key]
+            row = [key]
+            for exp in result["experiments"]:
+                val = values.get(exp["id"])
+                row.append(f"{val:.6f}" if val is not None else "—")
+            table.add_row(*row)
+
+        console.print(table)
+
+    elif action == "delete":
+        if not ids:
+            console.print("[red]✗ --ids required for 'delete' action[/red]")
+            return
+
+        for eid in ids.split(","):
+            eid = eid.strip()
+            deleted = db.delete_experiment(eid)
+            if deleted:
+                console.print(f"[green]✓[/green] Deleted experiment {eid}")
+            else:
+                console.print(f"[red]✗[/red] Experiment {eid} not found")
+
+    elif action == "leaderboard":
+        if not metric:
+            console.print("[red]✗ --metric required for 'leaderboard' action[/red]")
+            return
+
+        from forge.tracking.compare import get_leaderboard
+
+        results = get_leaderboard(db, metric=metric, top_k=top_k)
+        if not results:
+            console.print(f"[dim]No experiments with metric '{metric}' found.[/dim]")
+            return
+
+        table = Table(title=f"Leaderboard — {metric}", show_lines=True)
+        table.add_column("#", style="bold", no_wrap=True)
+        table.add_column("Experiment", style="cyan")
+        table.add_column("Value", justify="right")
+
+        for i, entry in enumerate(results, 1):
+            exp = entry["experiment"]
+            table.add_row(str(i), f"{exp['name']} ({exp['id']})", f"{entry['metric_value']:.6f}")
+
+        console.print(table)
+
+    else:
+        console.print(f"[red]✗ Unknown action: {action}[/red]")
+        console.print("  Available: list, show, compare, delete, leaderboard")
+
+
 # --- Entry point --------------------------------------------------------------
 
 
