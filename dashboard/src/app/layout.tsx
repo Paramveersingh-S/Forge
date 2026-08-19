@@ -29,6 +29,7 @@ export default function RootLayout({
               <div className="flex items-center gap-4 text-sm font-medium opacity-80">
                 <Link href="/experiments" className="hover:text-blue-400 transition-colors">Experiments</Link>
                 <Link href="/compare" className="hover:text-blue-400 transition-colors">Compare</Link>
+                <Link href="/registry" className="hover:text-blue-400 transition-colors">Registry</Link>
               </div>
             </div>
           </div>
