@@ -70,7 +70,13 @@ data = [
 sign = [
     "cryptography>=41.0.0",
 ]
-# Serving.
+# Web dashboard and API server.
+dashboard = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "websockets>=12.0",
+]
+# Serving (inference API).
 serve = [
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
@@ -81,7 +87,7 @@ deepspeed = [
 ]
 # Development.
 dev = [
-    "forge-llm[train,data,sign]",
+    "forge-llm[train,data,sign,dashboard]",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
@@ -91,8 +97,9 @@ dev = [
 ]
 # Everything.
 all = [
-    "forge-llm[train,kernels,trackers,eval,data,sign,serve,deepspeed]",
+    "forge-llm[train,kernels,trackers,eval,data,sign,dashboard,serve,deepspeed]",
 ]
+
 
 [project.scripts]
 forge = "forge.cli.app:run"

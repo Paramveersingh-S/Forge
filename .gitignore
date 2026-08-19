@@ -82,3 +82,9 @@ output/
 checkpoints/
 experiments.db
 *.log
+.forge/
+
+# Dashboard (Next.js)
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
