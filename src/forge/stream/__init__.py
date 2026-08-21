@@ -5,7 +5,7 @@ memory to a single layer rather than the full model.
 """
 
 from forge.stream.planner import StreamPlan, create_plan
+from forge.stream.profiler import TierResult, profile_tiers
 from forge.stream.runtime import StreamRuntime
-from forge.stream.profiler import profile_tiers, TierResult
 
 __all__ = ["StreamPlan", "StreamRuntime", "create_plan", "profile_tiers", "TierResult"]

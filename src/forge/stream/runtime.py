@@ -15,8 +15,8 @@ mmap and async DMA. Falls back to pure-Python torch.cuda.Stream.
 from __future__ import annotations
 
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Optional
 
 from forge.stream.planner import StreamPlan
 
@@ -71,7 +71,7 @@ class StreamRuntime:
         self._initialized = False
 
     @contextmanager
-    def session(self) -> Generator["StreamSession", None, None]:
+    def session(self) -> Generator[StreamSession, None, None]:
         """Context manager for a streaming session."""
         self.initialize()
         session = StreamSession(self)
@@ -100,7 +100,6 @@ class StreamRuntime:
     def _prefetch_rust(self, layer_idx: int, buffer_idx: int) -> None:
         """Rust-accelerated prefetch via forge_core."""
         try:
-            import forge_core
 
             # forge_core.stream handles mmap, pinned memory, and async DMA
             # The actual implementation is in forge-core/src/stream/
@@ -134,7 +133,7 @@ class StreamSession:
     def __init__(self, runtime: StreamRuntime) -> None:
         self._runtime = runtime
 
-    def iterate_layers(self) -> Generator["StreamedLayer", None, None]:
+    def iterate_layers(self) -> Generator[StreamedLayer, None, None]:
         """Iterate through model layers with double-buffered prefetch.
 
         Yields one layer at a time. The next layer is prefetched

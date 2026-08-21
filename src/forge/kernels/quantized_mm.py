@@ -14,19 +14,18 @@ dequantized weight matrix in global memory.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 def quantized_matmul(
-    x: "torch.Tensor",
-    qweight: "torch.Tensor",
-    scales: "torch.Tensor",
-    zeros: "torch.Tensor",
+    x: torch.Tensor,
+    qweight: torch.Tensor,
+    scales: torch.Tensor,
+    zeros: torch.Tensor,
     group_size: int = 64,
     bits: int = 4,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Fused dequantize + matmul for quantized weights.
 
     When Triton is available, dequantization happens inside the
@@ -56,11 +55,11 @@ def quantized_matmul(
 
 
 def dequantize_nf4(
-    qweight: "torch.Tensor",
-    scales: "torch.Tensor",
-    zeros: "torch.Tensor",
+    qweight: torch.Tensor,
+    scales: torch.Tensor,
+    zeros: torch.Tensor,
     group_size: int = 64,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Dequantize NF4-packed weights to FP16.
 
     NF4 (Normal Float 4-bit) stores each weight as a 4-bit index
@@ -111,13 +110,13 @@ def dequantize_nf4(
 
 
 def _pytorch_quantized_matmul(
-    x: "torch.Tensor",
-    qweight: "torch.Tensor",
-    scales: "torch.Tensor",
-    zeros: "torch.Tensor",
+    x: torch.Tensor,
+    qweight: torch.Tensor,
+    scales: torch.Tensor,
+    zeros: torch.Tensor,
     group_size: int,
     bits: int,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """PyTorch fallback: dequantize then matmul."""
     import torch
 
@@ -129,13 +128,13 @@ def _pytorch_quantized_matmul(
 
 
 def _triton_quantized_matmul(
-    x: "torch.Tensor",
-    qweight: "torch.Tensor",
-    scales: "torch.Tensor",
-    zeros: "torch.Tensor",
+    x: torch.Tensor,
+    qweight: torch.Tensor,
+    scales: torch.Tensor,
+    zeros: torch.Tensor,
     group_size: int,
     bits: int,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Triton-accelerated fused dequant + matmul.
 
     Dequantizes weight tiles on-the-fly inside the matmul kernel,
@@ -143,8 +142,6 @@ def _triton_quantized_matmul(
     ever writing the full FP16 weight to global memory.
     """
     import torch
-    import triton
-    import triton.language as tl
 
     # For the initial implementation, use a tile-based approach
     # where each tile dequantizes its weight block in shared memory

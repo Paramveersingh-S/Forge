@@ -58,9 +58,11 @@ class GRPOTrainer:
         # Lazy import heavy dependencies
         try:
             import torch
+            from peft import LoraConfig as PeftLoraConfig
+            from peft import get_peft_model
             from transformers import AutoModelForCausalLM, AutoTokenizer
-            from peft import LoraConfig as PeftLoraConfig, get_peft_model
-            from trl import GRPOConfig, GRPOTrainer as TRLGRPOTrainer
+            from trl import GRPOConfig
+            from trl import GRPOTrainer as TRLGRPOTrainer
         except ImportError as e:
             console.print(
                 f"[red]✗ Missing training dependency: {e}[/red]\n"

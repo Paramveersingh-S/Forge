@@ -12,17 +12,16 @@ Uses the log-sum-exp trick for numerical stability.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 def fused_cross_entropy(
-    logits: "torch.Tensor",
-    labels: "torch.Tensor",
+    logits: torch.Tensor,
+    labels: torch.Tensor,
     ignore_index: int = -100,
     reduction: str = "mean",
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Fused cross-entropy loss without full logits materialization.
 
     Automatically uses Triton kernel when available, otherwise
@@ -50,12 +49,12 @@ def fused_cross_entropy(
 
 
 def _pytorch_chunked_cross_entropy(
-    logits: "torch.Tensor",
-    labels: "torch.Tensor",
+    logits: torch.Tensor,
+    labels: torch.Tensor,
     ignore_index: int,
     reduction: str,
     chunk_size: int = 4096,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Chunked cross-entropy that processes vocab in chunks.
 
     Instead of computing softmax over the entire vocab at once,
@@ -67,7 +66,7 @@ def _pytorch_chunked_cross_entropy(
 
     N, V = logits.shape  # [tokens, vocab_size]
 
-    if V <= chunk_size:
+    if chunk_size >= V:
         # Small vocab — standard cross-entropy is fine
         return F.cross_entropy(logits, labels, ignore_index=ignore_index, reduction=reduction)
 
@@ -105,11 +104,11 @@ def _pytorch_chunked_cross_entropy(
 
 
 def _triton_fused_cross_entropy(
-    logits: "torch.Tensor",
-    labels: "torch.Tensor",
+    logits: torch.Tensor,
+    labels: torch.Tensor,
     ignore_index: int,
     reduction: str,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Triton-accelerated fused cross-entropy.
 
     Computes cross-entropy in a single kernel pass over the vocab

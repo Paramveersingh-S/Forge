@@ -1,9 +1,7 @@
 """Training configuration schema."""
 
-from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
-
 
 SUPPORTED_METHODS = (
     "sft", "dpo", "grpo", "kto", "orpo", "simpo", "ppo",
@@ -29,13 +27,13 @@ class TrainingConfig(BaseModel):
         default=1, ge=1, description="Gradient accumulation steps."
     )
     learning_rate: float = Field(default=2e-4, gt=0, description="Peak learning rate.")
-    num_epochs: Optional[int] = Field(default=None, ge=1, description="Number of training epochs.")
+    num_epochs: int | None = Field(default=None, ge=1, description="Number of training epochs.")
     max_steps: int = Field(default=-1, description="Max training steps (-1 = use epochs).")
     max_seq_length: int = Field(default=2048, ge=64, description="Maximum sequence length.")
     warmup_ratio: float = Field(default=0.03, ge=0, le=1, description="Warmup ratio.")
     lr_scheduler: str = Field(default="cosine", description="LR scheduler type.")
     weight_decay: float = Field(default=0.01, ge=0, description="Weight decay.")
-    seed: Optional[int] = Field(default=None, description="Random seed for reproducibility.")
+    seed: int | None = Field(default=None, description="Random seed for reproducibility.")
     gradient_checkpointing: bool = Field(
         default=True, description="Enable gradient checkpointing to save VRAM."
     )

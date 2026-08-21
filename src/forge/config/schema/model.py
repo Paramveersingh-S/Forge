@@ -1,6 +1,5 @@
 """Model configuration schema."""
 
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +24,7 @@ class ModelConfig(BaseModel):
         default=False,
         description="Whether to trust remote code from HuggingFace Hub.",
     )
-    revision: Optional[str] = Field(
+    revision: str | None = Field(
         default=None,
         description="Specific model revision/commit hash.",
     )

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rich.console import Console
 
@@ -64,7 +64,7 @@ def detect_format(path: str | Path) -> str:
     return "unknown"
 
 
-def _classify_record(record: Dict[str, Any]) -> str:
+def _classify_record(record: dict[str, Any]) -> str:
     """Classify a single record by its keys."""
     keys = set(record.keys())
 
@@ -93,9 +93,9 @@ def _classify_record(record: Dict[str, Any]) -> str:
 
 def load_dataset(
     path: str | Path,
-    format: Optional[str] = None,
+    format: str | None = None,
     split: str = "train",
-    max_samples: Optional[int] = None,
+    max_samples: int | None = None,
 ) -> Any:
     """Load a dataset with auto-format detection.
 
@@ -145,7 +145,7 @@ def load_dataset(
     return ds
 
 
-def get_stats(path: str | Path) -> Dict[str, Any]:
+def get_stats(path: str | Path) -> dict[str, Any]:
     """Get quick statistics about a dataset without fully loading it.
 
     Returns dict with: num_samples, format, columns, sample_record.
@@ -153,7 +153,7 @@ def get_stats(path: str | Path) -> Dict[str, Any]:
     path = Path(path)
     fmt = detect_format(path)
 
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "path": str(path),
         "format": fmt,
         "size_bytes": path.stat().st_size,

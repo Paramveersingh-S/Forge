@@ -50,9 +50,11 @@ class ORPOTrainer:
         # Lazy import heavy dependencies
         try:
             import torch
+            from peft import LoraConfig as PeftLoraConfig
+            from peft import get_peft_model
             from transformers import AutoModelForCausalLM, AutoTokenizer
-            from peft import LoraConfig as PeftLoraConfig, get_peft_model
-            from trl import ORPOConfig, ORPOTrainer as TRLORPOTrainer
+            from trl import ORPOConfig
+            from trl import ORPOTrainer as TRLORPOTrainer
         except ImportError as e:
             console.print(
                 f"[red]✗ Missing training dependency: {e}[/red]\n"

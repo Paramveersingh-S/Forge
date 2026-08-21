@@ -46,8 +46,9 @@ class SFTTrainer:
         # Lazy import heavy dependencies
         try:
             import torch
+            from peft import LoraConfig as PeftLoraConfig
+            from peft import get_peft_model
             from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
-            from peft import LoraConfig as PeftLoraConfig, get_peft_model
             from trl import SFTTrainer as TRLSFTTrainer
         except ImportError as e:
             console.print(

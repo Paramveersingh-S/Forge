@@ -1,6 +1,5 @@
 """LoRA configuration schema."""
 
-from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -15,7 +14,7 @@ class LoraConfig(BaseModel):
     )
     alpha: int = Field(default=16, description="LoRA alpha scaling factor.")
     dropout: float = Field(default=0.05, ge=0.0, le=1.0, description="LoRA dropout rate.")
-    target_modules: Union[str, List[str]] = Field(
+    target_modules: str | list[str] = Field(
         default="auto",
         description="Target modules for LoRA. 'auto' = let PEFT decide.",
     )
@@ -31,7 +30,7 @@ class LoraConfig(BaseModel):
         default="default",
         description="LoRA weight initialization (default, olora, pissa, loftq).",
     )
-    rank_pattern: Optional[Dict[str, int]] = Field(
+    rank_pattern: dict[str, int] | None = Field(
         default=None,
         description="Per-module rank overrides (e.g. {'experts.*.w1': 16}).",
     )

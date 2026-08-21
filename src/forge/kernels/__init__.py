@@ -18,7 +18,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # Detect Triton availability at import time (not at CLI startup)
-_TRITON_AVAILABLE: Optional[bool] = None
+_TRITON_AVAILABLE: bool | None = None
 
 
 def is_triton_available() -> bool:

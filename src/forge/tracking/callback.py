@@ -55,7 +55,7 @@ class ForgeTrainerCallback:
         if self._logger is not None:
             return
 
-        from forge.tracking import get_db, create_experiment
+        from forge.tracking import create_experiment, get_db
         from forge.tracking.metrics import MetricsLogger
 
         # Create experiment if we don't have one

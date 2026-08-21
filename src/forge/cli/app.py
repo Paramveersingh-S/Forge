@@ -5,7 +5,6 @@ Design principle: NO top-level torch/transformers imports. The light CLI
 pulling in the heavy training stack.
 """
 
-import sys
 
 import typer
 from rich.console import Console
@@ -157,14 +156,7 @@ def export(
     console.print("[yellow]⚠[/yellow] Export engine not yet implemented.")
 
 
-@app.command()
-def experiment(
-    action: str = typer.Argument("list", help="Action: list, compare, export."),
-) -> None:
-    """Manage experiments — list, compare, export."""
-    console.print(f"[bold blue]forge experiment[/bold blue] — {action}")
-    # TODO: Implement experiment tracking (Phase 3)
-    console.print("[yellow]⚠[/yellow] Experiment tracking not yet implemented.")
+
 
 
 @app.command()
@@ -208,7 +200,6 @@ def data(
 
     elif action == "convert":
         from forge.data.loader import detect_format
-        from forge.data.formats import convert_record
 
         src_fmt = format or detect_format(path)
         console.print(f"  Converting: {src_fmt} → {target_format}")
@@ -229,7 +220,7 @@ def data(
 @app.command()
 def profile() -> None:
     """Benchmark storage tiers for layer streaming (RAM vs NVMe vs GPU)."""
-    from forge.stream.profiler import profile_tiers, print_tier_report
+    from forge.stream.profiler import print_tier_report, profile_tiers
 
     console.print("[bold blue]forge profile[/bold blue] — benchmarking storage tiers...\n")
     results = profile_tiers()
@@ -257,11 +248,11 @@ def dashboard(
     console.print("[bold blue]forge dashboard[/bold blue]")
     console.print(f"  Server:  http://{host}:{port}")
     console.print(f"  API:     http://{host}:{port}/api/system/status")
-    console.print(f"  Press [cyan]Ctrl+C[/cyan] to stop.\n")
+    console.print("  Press [cyan]Ctrl+C[/cyan] to stop.\n")
 
     if not no_browser:
-        import webbrowser
         import threading
+        import webbrowser
 
         def _open_browser() -> None:
             import time

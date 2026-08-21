@@ -26,7 +26,7 @@ class MetricsBroadcaster:
     WebSocket clients receive them in real-time.
     """
 
-    _instance: "MetricsBroadcaster | None" = None
+    _instance: MetricsBroadcaster | None = None
 
     def __init__(self) -> None:
         # experiment_id → set of connected WebSocket clients
@@ -34,7 +34,7 @@ class MetricsBroadcaster:
         self._lock = asyncio.Lock()
 
     @classmethod
-    def get_instance(cls) -> "MetricsBroadcaster":
+    def get_instance(cls) -> MetricsBroadcaster:
         """Get the global broadcaster singleton."""
         if cls._instance is None:
             cls._instance = cls()

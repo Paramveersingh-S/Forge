@@ -13,19 +13,18 @@ import json
 import statistics
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rich.console import Console
-from rich.table import Table
 
 console = Console()
 
 
 def compute_quality_report(
     path: str | Path,
-    format: Optional[str] = None,
+    format: str | None = None,
     sample_size: int = 1000,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compute a quality report for a dataset.
 
     Fast, streaming analysis — doesn't load the entire dataset.
@@ -46,7 +45,7 @@ def compute_quality_report(
     if not records:
         return {"error": "Empty dataset", "num_samples": 0}
 
-    report: Dict[str, Any] = {
+    report: dict[str, Any] = {
         "path": str(path),
         "size_bytes": path.stat().st_size,
         "num_sampled": len(records),
@@ -59,7 +58,7 @@ def compute_quality_report(
     report["columns"] = sorted(all_keys)
 
     # Per-column analysis
-    col_stats: Dict[str, Dict[str, Any]] = {}
+    col_stats: dict[str, dict[str, Any]] = {}
     for key in sorted(all_keys):
         values = [r.get(key) for r in records]
         col_stats[key] = _analyze_column(key, values)
@@ -93,7 +92,7 @@ def compute_quality_report(
     report["duplicate_ratio"] = round(dup_count / len(records), 4) if records else 0
 
     # Empty field detection
-    empty_counts: Dict[str, int] = {}
+    empty_counts: dict[str, int] = {}
     for key in sorted(all_keys):
         empties = sum(1 for r in records if _is_empty(r.get(key)))
         if empties > 0:
@@ -106,9 +105,9 @@ def compute_quality_report(
     return report
 
 
-def print_quality_report(report: Dict[str, Any]) -> None:
+def print_quality_report(report: dict[str, Any]) -> None:
     """Pretty-print a quality report to the console."""
-    console.print(f"\n[bold blue]📊 Data Quality Report[/bold blue]")
+    console.print("\n[bold blue]📊 Data Quality Report[/bold blue]")
     console.print(f"  Path:    {report.get('path', 'N/A')}")
     console.print(f"  Samples: {report.get('num_sampled', 0)}")
     console.print(f"  Size:    {_human_size(report.get('size_bytes', 0))}")
@@ -142,9 +141,9 @@ def print_quality_report(report: Dict[str, Any]) -> None:
 # --- Internal helpers ---------------------------------------------------------
 
 
-def _read_sample(path: Path, max_records: int) -> List[Dict[str, Any]]:
+def _read_sample(path: Path, max_records: int) -> list[dict[str, Any]]:
     """Read up to max_records from a file."""
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
     suffix = path.suffix.lower()
 
     if suffix in (".jsonl", ".json"):
@@ -169,12 +168,12 @@ def _read_sample(path: Path, max_records: int) -> List[Dict[str, Any]]:
     return records
 
 
-def _analyze_column(name: str, values: list) -> Dict[str, Any]:
+def _analyze_column(name: str, values: list) -> dict[str, Any]:
     """Analyze a single column's values."""
     non_none = [v for v in values if v is not None]
     types = Counter(type(v).__name__ for v in non_none)
 
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "count": len(non_none),
         "null_count": len(values) - len(non_none),
         "types": dict(types),
@@ -191,7 +190,7 @@ def _analyze_column(name: str, values: list) -> Dict[str, Any]:
     return stats
 
 
-def _find_text_fields(record: Dict[str, Any]) -> List[str]:
+def _find_text_fields(record: dict[str, Any]) -> list[str]:
     """Find the primary text fields in a record."""
     text_priority = [
         "text", "content", "completion", "output", "response",
@@ -211,7 +210,7 @@ def _find_text_fields(record: Dict[str, Any]) -> List[str]:
     return found
 
 
-def _record_hash(record: Dict[str, Any]) -> str:
+def _record_hash(record: dict[str, Any]) -> str:
     """Create a hash for duplicate detection."""
     import hashlib
 
@@ -230,7 +229,7 @@ def _is_empty(value: Any) -> bool:
     return False
 
 
-def _compute_score(report: Dict[str, Any]) -> int:
+def _compute_score(report: dict[str, Any]) -> int:
     """Compute a 0-100 quality score from the report."""
     score = 100
 

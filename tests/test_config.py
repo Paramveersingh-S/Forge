@@ -1,16 +1,17 @@
 """Tests for the composable config system."""
 
+import tempfile
+from pathlib import Path
+
 import pytest
 import yaml
-from pathlib import Path
-import tempfile
 
+from forge.config.loader import _deep_merge, create_config_from_preset, load_config
 from forge.config.schema.base import ForgeConfig
+from forge.config.schema.data import DataConfig
 from forge.config.schema.lora import LoraConfig
 from forge.config.schema.model import ModelConfig
 from forge.config.schema.training import TrainingConfig
-from forge.config.schema.data import DataConfig
-from forge.config.loader import _deep_merge, load_config, create_config_from_preset
 
 
 class TestDeepMerge:

@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class LayerInfo:
     index: int
     name: str
     size_bytes: int
-    tensor_names: List[str] = field(default_factory=list)
+    tensor_names: list[str] = field(default_factory=list)
 
     @property
     def size_mb(self) -> float:
@@ -42,7 +42,7 @@ class StreamPlan:
 
     model_name: str
     total_layers: int
-    layers: List[LayerInfo]
+    layers: list[LayerInfo]
     num_buffers: int = 2
     source_tier: str = "ram"  # "ram", "disk", "gpu"
     prefetch_depth: int = 1
@@ -69,7 +69,7 @@ class StreamPlan:
         max_layer = max(l.size_bytes for l in self.layers)
         return (self.num_buffers * max_layer) / (1024 * 1024)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Return a summary dict for logging."""
         return {
             "model": self.model_name,
@@ -86,7 +86,7 @@ def create_plan(
     model_path: str | Path,
     num_buffers: int = 2,
     source_tier: str = "auto",
-    max_vram_gb: Optional[float] = None,
+    max_vram_gb: float | None = None,
 ) -> StreamPlan:
     """Create a streaming plan for a model.
 
@@ -140,7 +140,7 @@ def create_plan(
     return plan
 
 
-def _parse_layer_structure(st_files: List[Path]) -> List[LayerInfo]:
+def _parse_layer_structure(st_files: list[Path]) -> list[LayerInfo]:
     """Parse decoder layer structure from safetensors metadata.
 
     Groups tensors by layer index based on naming conventions
@@ -149,7 +149,7 @@ def _parse_layer_structure(st_files: List[Path]) -> List[LayerInfo]:
     import json
     import struct
 
-    layer_tensors: Dict[int, List[tuple]] = {}  # layer_idx -> [(name, size)]
+    layer_tensors: dict[int, list[tuple]] = {}  # layer_idx -> [(name, size)]
 
     for st_path in st_files:
         try:
@@ -196,7 +196,7 @@ def _parse_layer_structure(st_files: List[Path]) -> List[LayerInfo]:
     return layers
 
 
-def _extract_layer_index(tensor_name: str) -> Optional[int]:
+def _extract_layer_index(tensor_name: str) -> int | None:
     """Extract the decoder layer index from a tensor name.
 
     Handles naming conventions:
@@ -221,7 +221,7 @@ def _extract_layer_index(tensor_name: str) -> Optional[int]:
     return None
 
 
-def _auto_select_tier(total_size: int, max_vram_gb: Optional[float]) -> str:
+def _auto_select_tier(total_size: int, max_vram_gb: float | None) -> str:
     """Auto-select the streaming source tier based on available resources."""
     import psutil
 

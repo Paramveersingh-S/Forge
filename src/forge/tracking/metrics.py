@@ -12,9 +12,8 @@ Usage:
 
 from __future__ import annotations
 
-import time
 import threading
-from typing import Any
+import time
 
 from forge.tracking.db import ForgeDB
 
@@ -142,7 +141,7 @@ class MetricsLogger:
         self._buffer.clear()
         self._last_flush = time.monotonic()
 
-    def __enter__(self) -> "MetricsLogger":
+    def __enter__(self) -> MetricsLogger:
         return self
 
     def __exit__(self, *args: object) -> None:

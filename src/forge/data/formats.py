@@ -6,10 +6,11 @@ bring any format and Forge normalizes it internally.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List
+from collections.abc import Callable
+from typing import Any
 
 
-def sharegpt_to_openai(record: Dict[str, Any]) -> Dict[str, Any]:
+def sharegpt_to_openai(record: dict[str, Any]) -> dict[str, Any]:
     """Convert ShareGPT format to OpenAI-chat format.
 
     ShareGPT: {"conversations": [{"from": "human", "value": "..."}, {"from": "gpt", "value": "..."}]}
@@ -28,7 +29,7 @@ def sharegpt_to_openai(record: Dict[str, Any]) -> Dict[str, Any]:
     return {"messages": messages}
 
 
-def alpaca_to_openai(record: Dict[str, Any]) -> Dict[str, Any]:
+def alpaca_to_openai(record: dict[str, Any]) -> dict[str, Any]:
     """Convert Alpaca format to OpenAI-chat format.
 
     Alpaca: {"instruction": "...", "input": "...", "output": "..."}
@@ -48,7 +49,7 @@ def alpaca_to_openai(record: Dict[str, Any]) -> Dict[str, Any]:
     return {"messages": messages}
 
 
-def completion_to_openai(record: Dict[str, Any]) -> Dict[str, Any]:
+def completion_to_openai(record: dict[str, Any]) -> dict[str, Any]:
     """Convert simple prompt/completion to OpenAI-chat format.
 
     Input: {"prompt": "...", "completion": "..."} or {"text": "..."}
@@ -78,7 +79,7 @@ def completion_to_openai(record: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def openai_to_sharegpt(record: Dict[str, Any]) -> Dict[str, Any]:
+def openai_to_sharegpt(record: dict[str, Any]) -> dict[str, Any]:
     """Convert OpenAI-chat format to ShareGPT format."""
     role_map = {"user": "human", "assistant": "gpt", "system": "system"}
     conversations = []
@@ -90,10 +91,10 @@ def openai_to_sharegpt(record: Dict[str, Any]) -> Dict[str, Any]:
     return {"conversations": conversations}
 
 
-def openai_to_alpaca(record: Dict[str, Any]) -> Dict[str, Any]:
+def openai_to_alpaca(record: dict[str, Any]) -> dict[str, Any]:
     """Convert OpenAI-chat format to Alpaca format."""
     messages = record.get("messages", [])
-    result: Dict[str, Any] = {"instruction": "", "input": "", "output": ""}
+    result: dict[str, Any] = {"instruction": "", "input": "", "output": ""}
 
     for msg in messages:
         role = msg.get("role", "")
@@ -110,7 +111,7 @@ def openai_to_alpaca(record: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Registry of converters: (source_format, target_format) -> converter_fn
-CONVERTERS: Dict[tuple[str, str], Callable[[Dict[str, Any]], Dict[str, Any]]] = {
+CONVERTERS: dict[tuple[str, str], Callable[[dict[str, Any]], dict[str, Any]]] = {
     ("sharegpt", "openai"): sharegpt_to_openai,
     ("alpaca", "openai"): alpaca_to_openai,
     ("completion", "openai"): completion_to_openai,
@@ -120,10 +121,10 @@ CONVERTERS: Dict[tuple[str, str], Callable[[Dict[str, Any]], Dict[str, Any]]] = 
 
 
 def convert_record(
-    record: Dict[str, Any],
+    record: dict[str, Any],
     source_format: str,
     target_format: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convert a single record between formats.
 
     Args:
@@ -175,11 +176,11 @@ def convert_dataset(
     if source_format == target_format:
         return dataset
 
-    def _convert_batch(batch: Dict[str, list]) -> Dict[str, list]:
+    def _convert_batch(batch: dict[str, list]) -> dict[str, list]:
         # Reconstruct records from columnar batch
         keys = list(batch.keys())
         n = len(batch[keys[0]])
-        results: Dict[str, list] = {}
+        results: dict[str, list] = {}
 
         for i in range(n):
             record = {k: batch[k][i] for k in keys}

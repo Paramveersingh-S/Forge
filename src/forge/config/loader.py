@@ -12,28 +12,24 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 from rich.console import Console
 
 from forge.config.schema.base import ForgeConfig
-from forge.config.schema.data import DataConfig
-from forge.config.schema.lora import LoraConfig
-from forge.config.schema.model import ModelConfig
-from forge.config.schema.training import TrainingConfig
 
 console = Console()
 
 # Search paths for config fragments (recipes, presets).
-_FRAGMENT_SEARCH_PATHS: List[Path] = [
+_FRAGMENT_SEARCH_PATHS: list[Path] = [
     Path(__file__).parent.parent.parent.parent / "recipes",
     Path(__file__).parent.parent.parent.parent / "presets",
     Path.cwd(),
 ]
 
 
-def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """Deep-merge two dicts. Override values take precedence."""
     result = copy.deepcopy(base)
     for key, value in override.items():
@@ -63,14 +59,14 @@ def _resolve_fragment(name: str) -> Path:
     )
 
 
-def _load_raw_yaml(path: Path) -> Dict[str, Any]:
+def _load_raw_yaml(path: Path) -> dict[str, Any]:
     """Load a YAML file as a raw dict."""
     with open(path) as f:
         raw = yaml.safe_load(f)
     return raw or {}
 
 
-def _resolve_and_merge(raw: Dict[str, Any]) -> Dict[str, Any]:
+def _resolve_and_merge(raw: dict[str, Any]) -> dict[str, Any]:
     """Resolve `extends` chains and apply `overrides`."""
     extends = raw.pop("extends", [])
     overrides = raw.pop("overrides", {})

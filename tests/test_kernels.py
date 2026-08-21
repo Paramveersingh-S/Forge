@@ -2,7 +2,7 @@
 
 import pytest
 
-from forge.kernels import is_triton_available, get_kernel_info
+from forge.kernels import get_kernel_info, is_triton_available
 
 
 class TestKernelAvailability:
@@ -60,6 +60,7 @@ class TestLoRAFusedKernel:
     def test_scale_zero_equals_base(self, tensors) -> None:
         """With scale=0, LoRA contribution should be zero."""
         import torch
+
         from forge.kernels.lora_fused import _pytorch_lora_fused_forward
 
         x, W, A, B = tensors

@@ -9,11 +9,8 @@ Requires: pip install 'forge-llm[data]' (datasketch + scikit-learn)
 
 from __future__ import annotations
 
-import hashlib
-import json
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from rich.console import Console
 from rich.progress import Progress
@@ -28,7 +25,7 @@ DEFAULT_THRESHOLD = 0.8
 DEFAULT_NUM_PERM = 128
 
 
-def shinglize(text: str, k: int = DEFAULT_SHINGLE_SIZE) -> Set[str]:
+def shinglize(text: str, k: int = DEFAULT_SHINGLE_SIZE) -> set[str]:
     """Convert text into a set of character k-shingles.
 
     Normalizes whitespace and lowercases before shingling.
@@ -40,12 +37,12 @@ def shinglize(text: str, k: int = DEFAULT_SHINGLE_SIZE) -> Set[str]:
 
 
 def find_near_duplicates(
-    records: List[Dict[str, Any]],
+    records: list[dict[str, Any]],
     text_field: str = "text",
     threshold: float = DEFAULT_THRESHOLD,
     num_perm: int = DEFAULT_NUM_PERM,
     shingle_size: int = DEFAULT_SHINGLE_SIZE,
-) -> List[Tuple[int, int, float]]:
+) -> list[tuple[int, int, float]]:
     """Find near-duplicate pairs using MinHash LSH.
 
     Args:
@@ -68,7 +65,7 @@ def find_near_duplicates(
         return []
 
     lsh = MinHashLSH(threshold=threshold, num_perm=num_perm)
-    minhashes: Dict[int, MinHash] = {}
+    minhashes: dict[int, MinHash] = {}
 
     with Progress() as progress:
         task = progress.add_task("[cyan]Computing MinHash signatures...", total=len(records))
@@ -94,8 +91,8 @@ def find_near_duplicates(
             progress.advance(task)
 
     # Query for near-duplicates
-    duplicates: List[Tuple[int, int, float]] = []
-    seen_pairs: Set[Tuple[int, int]] = set()
+    duplicates: list[tuple[int, int, float]] = []
+    seen_pairs: set[tuple[int, int]] = set()
 
     for idx, m in minhashes.items():
         candidates = lsh.query(m)
@@ -116,11 +113,11 @@ def find_near_duplicates(
 
 
 def deduplicate(
-    records: List[Dict[str, Any]],
+    records: list[dict[str, Any]],
     text_field: str = "text",
     threshold: float = DEFAULT_THRESHOLD,
     strategy: str = "keep_first",
-) -> Tuple[List[Dict[str, Any]], List[int]]:
+) -> tuple[list[dict[str, Any]], list[int]]:
     """Remove near-duplicates from a list of records.
 
     Args:
@@ -135,7 +132,7 @@ def deduplicate(
     duplicates = find_near_duplicates(records, text_field, threshold)
 
     # Build set of indices to remove
-    remove_indices: Set[int] = set()
+    remove_indices: set[int] = set()
     for idx_a, idx_b, sim in duplicates:
         if strategy == "keep_longest":
             text_a = _extract_text(records[idx_a], text_field)
@@ -160,7 +157,7 @@ def deduplicate(
     return deduped, removed
 
 
-def _extract_text(record: Dict[str, Any], text_field: str) -> Optional[str]:
+def _extract_text(record: dict[str, Any], text_field: str) -> str | None:
     """Extract the primary text from a record for dedup comparison."""
     # Direct field match
     if text_field in record:

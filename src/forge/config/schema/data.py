@@ -1,6 +1,5 @@
 """Data configuration schema."""
 
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +15,7 @@ class DataConfig(BaseModel):
         default="auto",
         description="Data format (auto, sharegpt, alpaca, jsonl, parquet, hf).",
     )
-    eval_path: Optional[str] = Field(
+    eval_path: str | None = Field(
         default=None,
         description="Path to evaluation data. If None, splits from training data.",
     )
@@ -26,7 +25,7 @@ class DataConfig(BaseModel):
         le=0.5,
         description="Fraction of data to use for evaluation if no eval_path.",
     )
-    max_samples: Optional[int] = Field(
+    max_samples: int | None = Field(
         default=None,
         ge=1,
         description="Maximum number of training samples (for debugging).",
@@ -36,7 +35,7 @@ class DataConfig(BaseModel):
         ge=1,
         description="Number of workers for data preprocessing.",
     )
-    columns: Optional[List[str]] = Field(
+    columns: list[str] | None = Field(
         default=None,
         description="Column names to use (for datasets with non-standard columns).",
     )

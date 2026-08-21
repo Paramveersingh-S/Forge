@@ -7,7 +7,8 @@ decorators and are lazy-loaded only when needed.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Protocol, Type
+from collections.abc import Callable
+from typing import Protocol
 
 from forge.config.schema.base import ForgeConfig
 
@@ -25,7 +26,7 @@ class TrainerProtocol(Protocol):
 
 
 # Global registry
-_REGISTRY: Dict[str, Type[TrainerProtocol]] = {}
+_REGISTRY: dict[str, type[TrainerProtocol]] = {}
 
 
 def register_trainer(method: str) -> Callable:
@@ -38,7 +39,7 @@ def register_trainer(method: str) -> Callable:
             def validate_config(self, config): ...
     """
 
-    def decorator(cls: Type[TrainerProtocol]) -> Type[TrainerProtocol]:
+    def decorator(cls: type[TrainerProtocol]) -> type[TrainerProtocol]:
         _REGISTRY[method] = cls
         return cls
 

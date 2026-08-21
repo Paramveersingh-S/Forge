@@ -2,9 +2,8 @@
 
 import pytest
 
-from forge.trainer.registry import register_trainer, get_trainer, list_methods, _REGISTRY
 from forge.config.schema.base import ForgeConfig
-from forge.config.schema.model import ModelConfig
+from forge.trainer.registry import _REGISTRY, get_trainer, list_methods, register_trainer
 
 
 class TestTrainerRegistry:

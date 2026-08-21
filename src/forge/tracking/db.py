@@ -18,11 +18,11 @@ import json
 import sqlite3
 import threading
 import uuid
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Generator, Optional
-
+from typing import Any
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS experiments (

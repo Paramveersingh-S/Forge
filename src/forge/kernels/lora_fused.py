@@ -13,20 +13,19 @@ tensor (x @ A) and reduces kernel launch overhead from 5 to 1.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
 def lora_fused_forward(
-    x: "torch.Tensor",
-    W: "torch.Tensor",
-    A: "torch.Tensor",
-    B: "torch.Tensor",
+    x: torch.Tensor,
+    W: torch.Tensor,
+    A: torch.Tensor,
+    B: torch.Tensor,
     scale: float = 1.0,
     dropout_p: float = 0.0,
     training: bool = False,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Fused LoRA forward: y = (x @ W) + (x @ A @ B) * scale.
 
     Automatically selects the Triton kernel when available,
@@ -56,16 +55,15 @@ def lora_fused_forward(
 
 
 def _pytorch_lora_fused_forward(
-    x: "torch.Tensor",
-    W: "torch.Tensor",
-    A: "torch.Tensor",
-    B: "torch.Tensor",
+    x: torch.Tensor,
+    W: torch.Tensor,
+    A: torch.Tensor,
+    B: torch.Tensor,
     scale: float,
     dropout_p: float,
     training: bool,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """PyTorch reference implementation (always available)."""
-    import torch
     import torch.nn.functional as F
 
     # Base linear
@@ -82,14 +80,14 @@ def _pytorch_lora_fused_forward(
 
 
 def _triton_lora_fused_forward(
-    x: "torch.Tensor",
-    W: "torch.Tensor",
-    A: "torch.Tensor",
-    B: "torch.Tensor",
+    x: torch.Tensor,
+    W: torch.Tensor,
+    A: torch.Tensor,
+    B: torch.Tensor,
     scale: float,
     dropout_p: float,
     training: bool,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """Triton-accelerated fused LoRA forward.
 
     Fuses the base matmul and LoRA matmul into a single tiled kernel.
@@ -97,8 +95,6 @@ def _triton_lora_fused_forward(
     and never written to global memory.
     """
     import torch
-    import triton
-    import triton.language as tl
 
     # For large matrices, use the tiled kernel
     # For small matrices, the overhead isn't worth it — use PyTorch

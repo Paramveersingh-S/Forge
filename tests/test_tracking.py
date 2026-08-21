@@ -1,20 +1,17 @@
 """Tests for the experiment tracking system."""
 
-import json
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from forge.tracking.db import ForgeDB
-from forge.tracking.metrics import MetricsLogger
 from forge.tracking.compare import (
     compare_experiments,
-    get_leaderboard,
     get_config_diff,
+    get_leaderboard,
     get_metric_series_multi,
 )
+from forge.tracking.db import ForgeDB
+from forge.tracking.metrics import MetricsLogger
 
 
 @pytest.fixture

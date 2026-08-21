@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -36,8 +36,8 @@ class LeaderboardRequest(BaseModel):
 @router.get("/experiments")
 def list_experiments(
     request: Request,
-    status: Optional[str] = Query(None, description="Filter by status"),
-    tag: Optional[str] = Query(None, description="Filter by tag"),
+    status: str | None = Query(None, description="Filter by status"),
+    tag: str | None = Query(None, description="Filter by tag"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> dict[str, Any]:

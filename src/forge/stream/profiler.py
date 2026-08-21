@@ -13,8 +13,6 @@ import os
 import tempfile
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ class TierResult:
 def profile_tiers(
     block_size_mb: int = 64,
     num_iterations: int = 5,
-) -> List[TierResult]:
+) -> list[TierResult]:
     """Profile all available storage tiers.
 
     Writes and reads test blocks to measure real throughput.
@@ -56,7 +54,7 @@ def profile_tiers(
     Returns:
         List of TierResult, sorted by throughput (best first).
     """
-    results: List[TierResult] = []
+    results: list[TierResult] = []
     block_size = block_size_mb * 1024 * 1024
 
     # Profile RAM
@@ -159,7 +157,7 @@ def _profile_disk(block_size: int, num_iterations: int) -> TierResult:
             pass
 
 
-def _profile_gpu(block_size: int, num_iterations: int) -> Optional[TierResult]:
+def _profile_gpu(block_size: int, num_iterations: int) -> TierResult | None:
     """Profile GPU memory throughput (host→device transfer)."""
     try:
         import torch
@@ -205,7 +203,7 @@ def _profile_gpu(block_size: int, num_iterations: int) -> Optional[TierResult]:
         return None
 
 
-def print_tier_report(results: List[TierResult]) -> None:
+def print_tier_report(results: list[TierResult]) -> None:
     """Pretty-print tier profiling results."""
     from rich.console import Console
     from rich.table import Table

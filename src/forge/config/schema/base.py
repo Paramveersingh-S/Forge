@@ -4,7 +4,6 @@ This is intentionally small (~50 lines) compared to Soup's 6829-line
 monolith. Each concern lives in its own schema module.
 """
 
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,7 +27,7 @@ class ForgeConfig(BaseModel):
     data: DataConfig = Field(default_factory=DataConfig)
 
     # Metadata — not used for training, but tracked for provenance.
-    project_name: Optional[str] = Field(
+    project_name: str | None = Field(
         default=None,
         description="Project name for experiment tracking.",
     )
