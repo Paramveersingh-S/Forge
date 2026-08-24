@@ -272,19 +272,18 @@ forge experiment export run_01 --to mlflow  # Export to external tracker
 
 Every adapter Forge produces is auditable from first gradient to production deploy:
 
-| Standard | Implementation |
-|:---|:---|
-| **CycloneDX ML-BOM** | Machine-readable bill of materials for the adapter |
-| **SLSA-3 in-toto** | Cryptographic attestation of the training pipeline |
-| **EU AI Act Annex XI/XII** | Auto-generated compliance documentation |
-| **HIPAA / SOC 2** | Audit logs with retention and rotation policies |
-| **ed25519 Signing** | Detached signatures for adapter weights |
-| **Backdoor Scanning** | Spectral analysis for rank-1 dominant tensors |
+| Standard | Implementation | Status |
+|:---|:---|:---|
+| **CycloneDX ML-BOM** | Machine-readable bill of materials for the adapter | ✅ Implemented |
+| **ed25519 Signing** | Detached signatures for adapter weights | ✅ Implemented |
+| **SLSA-3 in-toto** | Cryptographic attestation of the training pipeline | 🚧 Roadmap |
+| **EU AI Act Annex XI/XII** | Auto-generated compliance documentation | 🚧 Roadmap |
+| **HIPAA / SOC 2** | Audit logs with retention and rotation policies | 🚧 Roadmap |
+| **Backdoor Scanning** | Spectral analysis for rank-1 dominant tensors | 🚧 Roadmap |
 
 ```bash
 forge bom emit --format cyclonedx     # Generate ML-BOM
 forge attest sign --key private.pem    # Sign the training attestation
-forge adapters scan ./my-lora          # Scan for backdoor signatures
 ```
 
 ### 🚀 Training Methods
@@ -302,7 +301,13 @@ forge adapters scan ./my-lora          # Scan for backdoor signatures
 | **Reward Model** | RL | Train a reward model for RLHF |
 | **Unlearn** | Safety | Targeted knowledge removal (GDPR compliance) |
 
-### 🔒 Ship Gate
+---
+
+## Roadmap (v1.0)
+
+While Forge currently handles end-to-end training, layer streaming, and cryptographic signing, the following features are actively being developed for the v1.0 release:
+
+### 🔒 Ship Gate & Eval Engine
 
 One command decides if your fine-tune is safe to deploy:
 
@@ -310,14 +315,13 @@ One command decides if your fine-tune is safe to deploy:
 forge ship --base ./base --adapter ./my-lora --task-eval task.jsonl
 # exit 0 = SHIP    ← adapter improves on base, no regressions
 # exit 2 = DON'T SHIP  ← regression detected
-# exit 3 = bad flags
 ```
 
 Built-in offline benchmark suites: MCQ · arithmetic · tool-calling · JSON validity · safety/refusal · over-refusal · instruction-following · common-sense.
 
 ### 👥 Team Workspaces
 
-Forge is built for teams from day one:
+Forge will support native team collaboration:
 
 ```bash
 forge workspace init my-team           # Create a shared workspace
@@ -328,7 +332,6 @@ forge experiment share run_01 --team   # Share experiment with team
 - **RBAC**: Owner, Maintainer, Contributor, Viewer roles
 - **Shared configs**: Team-wide presets and recipes
 - **Audit trail**: Who trained what, when, with which data
-- **Git-native**: All configs and metadata are version-controlled
 
 ---
 

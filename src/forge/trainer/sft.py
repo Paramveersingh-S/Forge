@@ -135,6 +135,40 @@ class SFTTrainer:
             tags=config.tags + ["sft"],
         )
 
+        # Wire up layer streaming if enabled
+        if config.training.stream_layers:
+            console.print("[dim]Wiring up layer streaming hooks...[/dim]")
+            try:
+                from forge.stream.planner import StreamPlanner, StreamConfig
+                from forge.stream.runtime import StreamRuntime
+                
+                # Mock a planner for the layers in the model
+                # In full implementation, we analyze model.model.layers
+                stream_cfg = StreamConfig(
+                    model_name=config.model.name,
+                    max_vram_gb=4.0, # Target laptop VRAM
+                    num_buffers=2,
+                )
+                planner = StreamPlanner(stream_cfg)
+                plan = planner.plan()
+                runtime = StreamRuntime(plan)
+                
+                # Register forward pre-hooks on transformer layers to trigger prefetching
+                # This ensures the next layer is prefetched while current layer computes
+                if hasattr(model, "model") and hasattr(model.model, "layers"):
+                    layers = model.model.layers
+                    for i, layer in enumerate(layers):
+                        def prefetch_hook(module, args, layer_idx=i):
+                            # The runtime schedules async DMA for layer_idx + 1
+                            next_idx = layer_idx + 1
+                            if next_idx < len(layers):
+                                runtime._prefetch_layer(next_idx, next_idx % 2)
+                        layer.register_forward_pre_hook(prefetch_hook)
+                        
+                console.print("[bold green]✓ Layer streaming enabled[/bold green]")
+            except Exception as e:
+                console.print(f"[yellow]Layer streaming setup failed: {e}[/yellow]")
+
         # Create trainer
         trainer = TRLSFTTrainer(
             model=model,

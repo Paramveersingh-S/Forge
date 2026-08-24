@@ -28,11 +28,10 @@ def sign_bom(bom: MLBOM, private_key_path: str | Path | None = None) -> str:
     
     try:
         import forge_core.crypto
-        # Assuming forge_core implements ed25519 signing in the future
-        if hasattr(forge_core.crypto, "sign_ed25519"):
-            with open(private_key_path, "rb") as f:
-                key_bytes = f.read()
-            return forge_core.crypto.sign_ed25519(key_bytes, bom_json)
+        if hasattr(forge_core.crypto, "sign_message"):
+            with open(private_key_path, "r") as f:
+                priv_hex = f.read().strip()
+            return forge_core.crypto.sign_message(priv_hex, bom_json)
     except ImportError:
         pass
         
@@ -77,10 +76,10 @@ def verify_signature(bom: MLBOM, signature: str, public_key_path: str | Path) ->
         
     try:
         import forge_core.crypto
-        if hasattr(forge_core.crypto, "verify_ed25519"):
-            with open(public_key_path, "rb") as f:
-                key_bytes = f.read()
-            return forge_core.crypto.verify_ed25519(key_bytes, bom_json, signature)
+        if hasattr(forge_core.crypto, "verify_message"):
+            with open(public_key_path, "r") as f:
+                pub_hex = f.read().strip()
+            return forge_core.crypto.verify_message(pub_hex, bom_json, signature)
     except ImportError:
         pass
         
@@ -94,9 +93,9 @@ def _generate_keypair(private_key_path: Path) -> None:
     try:
         import forge_core.crypto
         if hasattr(forge_core.crypto, "generate_ed25519_keypair"):
-            priv, pub = forge_core.crypto.generate_ed25519_keypair()
-            private_key_path.write_bytes(priv)
-            public_key_path.write_bytes(pub)
+            priv_hex, pub_hex = forge_core.crypto.generate_ed25519_keypair()
+            private_key_path.write_text(priv_hex)
+            public_key_path.write_text(pub_hex)
             # Secure the private key
             os.chmod(private_key_path, 0o600)
             return
