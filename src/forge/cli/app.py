@@ -114,25 +114,31 @@ def doctor() -> None:
 
 @app.command(name="eval")
 def evaluate(
+    base: str = typer.Option(..., "--base", "-b", help="Path to the base model."),
     adapter: str = typer.Option(..., "--adapter", "-a", help="Path to the adapter directory."),
-    suite: str = typer.Option(
-        "mmlu,tool_call",
-        "--suite",
-        "-s",
-        help="Comma-separated evaluation suites.",
-    ),
+    tasks: str = typer.Option(..., "--tasks", "-t", help="Path to the JSONL task file."),
 ) -> None:
     """Evaluate a fine-tuned adapter against benchmark suites."""
-    console.print(f"[bold blue]forge eval[/bold blue] — suites: {suite}")
+    from forge.eval.engine import evaluate_adapter
+    
+    console.print(f"[bold blue]forge eval[/bold blue]")
+    console.print(f"  Base:    {base}")
     console.print(f"  Adapter: {adapter}")
-    # TODO: Implement evaluation engine
-    console.print("[yellow]⚠[/yellow] Evaluation engine not yet implemented.")
+    console.print(f"  Tasks:   {tasks}")
+    
+    try:
+        results = evaluate_adapter(base, adapter, tasks)
+        console.print(f"\nFinal Score: [bold green]{results['score']:.2%}[/bold green]")
+    except Exception as e:
+        console.print(f"[red]✗ Evaluation failed: {e}[/red]")
+        raise SystemExit(1)
 
 
 @app.command()
 def ship(
     base: str = typer.Argument(..., help="Path to the base model."),
     adapter: str = typer.Argument(..., help="Path to the trained adapter."),
+    task_eval: str = typer.Option(None, "--task-eval", help="Path to task JSONL to gate deployment."),
 ) -> None:
     """Run governance checks (ML-BOM, attestation) and ship to registry."""
     import json
@@ -140,10 +146,25 @@ def ship(
     
     from forge.governance.attest import sign_bom
     from forge.governance.bom import generate_bom
+    from forge.eval.engine import evaluate_adapter, DEFAULT_THRESHOLD
 
     console.print("[bold blue]forge ship[/bold blue] — Governance & Attestation")
     console.print(f"  Base:    {base}")
     console.print(f"  Adapter: {adapter}")
+    
+    if task_eval:
+        console.print(f"\n[bold cyan]Running Ship Gate Evaluation on {task_eval}...[/bold cyan]")
+        try:
+            results = evaluate_adapter(base, adapter, task_eval)
+            if results["score"] < DEFAULT_THRESHOLD:
+                console.print(f"[bold red]✗ DON'T SHIP: Regression detected (Score {results['score']:.2%} < Threshold {DEFAULT_THRESHOLD:.2%})[/bold red]")
+                raise SystemExit(2)
+            console.print(f"[bold green]✓ SHIP: Adapter passed gating (Score {results['score']:.2%})[/bold green]")
+        except Exception as e:
+            if isinstance(e, SystemExit):
+                raise
+            console.print(f"[red]✗ Gating failed: {e}[/red]")
+            raise SystemExit(3)
     
     adapter_path = Path(adapter)
     if not adapter_path.exists():
@@ -192,6 +213,75 @@ def export(
         raise SystemExit(1)
 
 
+@app.command()
+def workspace(
+    action: str = typer.Argument(..., help="Action: init, invite, list"),
+    name: str = typer.Argument(None, help="Team name or ID."),
+    email: str = typer.Option(None, "--email", "-e", help="Email of the user to invite."),
+    role: str = typer.Option("contributor", "--role", "-r", help="RBAC role: owner, maintainer, contributor, viewer."),
+) -> None:
+    """Manage team workspaces and RBAC."""
+    from forge.workspace.manager import WorkspaceManager
+    manager = WorkspaceManager()
+    
+    if action == "init":
+        if not name:
+            console.print("[red]✗ Team name required for init.[/red]")
+            raise SystemExit(1)
+        try:
+            team_id = manager.init_team(name)
+            console.print(f"[green]✓[/green] Initialized workspace for team: [bold]{name}[/bold] ({team_id})")
+        except ValueError as e:
+            console.print(f"[red]✗ {e}[/red]")
+            
+    elif action == "invite":
+        if not name or not email:
+            console.print("[red]✗ Team name and email required for invite.[/red]")
+            raise SystemExit(1)
+        try:
+            manager.invite_member(name, email, role)
+            console.print(f"[green]✓[/green] Invited {email} to {name} as [cyan]{role}[/cyan]")
+        except ValueError as e:
+            console.print(f"[red]✗ {e}[/red]")
+            
+    elif action == "list":
+        if not name:
+            console.print("[red]✗ Team name required to list members.[/red]")
+            raise SystemExit(1)
+        members = manager.list_members(name)
+        if not members:
+            console.print(f"[yellow]⚠ No members found for {name}.[/yellow]")
+        else:
+            from rich.table import Table
+            table = Table(title=f"Members: {name}")
+            table.add_column("Email", style="cyan")
+            table.add_column("Role", style="bold")
+            for m in members:
+                table.add_row(m["email"], m["role"])
+            console.print(table)
+            
+    else:
+        console.print(f"[red]✗ Unknown action: {action}[/red]")
+        console.print("  Available: init, invite, list")
+
+
+@app.command()
+def adapters(
+    action: str = typer.Argument(..., help="Action: scan"),
+    path: str = typer.Argument(..., help="Path to the adapter directory or safetensors file."),
+    threshold: float = typer.Option(10.0, "--threshold", "-t", help="Dominance threshold for backdoor detection."),
+) -> None:
+    """Manage and inspect trained adapters (e.g., backdoor scanning)."""
+    if action == "scan":
+        from forge.governance.scan import scan_adapter
+        is_clean = scan_adapter(path, threshold=threshold)
+        if not is_clean:
+            raise SystemExit(2)
+    else:
+        console.print(f"[red]✗ Unknown action: {action}[/red]")
+        console.print("  Available: scan")
+
+
 
 
 
@@ -236,17 +326,53 @@ def data(
 
     elif action == "convert":
         from forge.data.loader import detect_format
+        from forge.data.formats import convert_record
+        import json
+        import os
 
         src_fmt = format or detect_format(path)
         console.print(f"  Converting: {src_fmt} → {target_format}")
-        console.print(f"  Output:     {output or '<stdout>'}")
-        # TODO: Full file conversion (streaming, not in-memory)
-        console.print("[yellow]⚠[/yellow] Full file conversion coming soon.")
+        out_file = output or f"{os.path.splitext(path)[0]}_{target_format}.jsonl"
+        console.print(f"  Output:     {out_file}")
+        
+        try:
+            with open(path, "r", encoding="utf-8") as f_in, open(out_file, "w", encoding="utf-8") as f_out:
+                for line in f_in:
+                    if not line.strip():
+                        continue
+                    record = json.loads(line)
+                    converted = convert_record(record, src_fmt, target_format)
+                    f_out.write(json.dumps(converted) + "\n")
+            console.print(f"[green]✓[/green] Conversion complete.")
+        except Exception as e:
+            console.print(f"[red]✗ Conversion failed: {e}[/red]")
 
     elif action == "dedup":
+        from forge.data.dedup import deduplicate
+        import json
+        import os
+        
         console.print(f"  Dataset: {path}")
-        # TODO: Wire up MinHash dedup
-        console.print("[yellow]⚠[/yellow] Deduplication coming soon. (pip install 'forge-llm[data]')")
+        out_file = output or f"{os.path.splitext(path)[0]}_dedup.jsonl"
+        
+        records = []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        records.append(json.loads(line))
+                        
+            console.print(f"  Loaded {len(records)} records. Running MinHash LSH deduplication...")
+            # We try 'text' first, or fallback heuristics in dedup.py
+            deduped, removed = deduplicate(records, text_field="text")
+            
+            with open(out_file, "w", encoding="utf-8") as f:
+                for r in deduped:
+                    f.write(json.dumps(r) + "\n")
+                    
+            console.print(f"  Output: {out_file}")
+        except Exception as e:
+            console.print(f"[red]✗ Deduplication failed: {e}[/red]")
 
     else:
         console.print(f"[red]✗ Unknown action: {action}[/red]")
