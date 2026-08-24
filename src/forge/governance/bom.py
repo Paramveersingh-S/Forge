@@ -57,9 +57,14 @@ def generate_bom(adapter_dir: str | Path, base_model: str) -> MLBOM:
             training_method = config.training.method
             hyperparameters = config.training.model_dump()
             if config.data:
-                # In a real implementation, we would hash the datasets here
-                dataset_hashes = {d.path: "sha256:unknown" for d in config.data.datasets}
-        except Exception:
+                dataset_hashes = {}
+                for d in config.data.datasets:
+                    try:
+                        import forge_core.crypto
+                        d_hash = forge_core.crypto.sha256_file(str(d.path))
+                        dataset_hashes[d.path] = f"sha256:{d_hash}"
+                    except Exception:
+                        dataset_hashes[d.path] = "sha256:unknown"
             pass
 
     # Try to hash the safetensors file
