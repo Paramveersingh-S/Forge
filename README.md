@@ -276,14 +276,16 @@ Every adapter Forge produces is auditable from first gradient to production depl
 |:---|:---|:---|
 | **CycloneDX ML-BOM** | Machine-readable bill of materials for the adapter | ✅ Implemented |
 | **ed25519 Signing** | Detached signatures for adapter weights | ✅ Implemented |
+| **Backdoor Scanning** | Spectral analysis for rank-1 dominant tensors | ✅ Implemented |
 | **SLSA-3 in-toto** | Cryptographic attestation of the training pipeline | 🚧 Roadmap |
 | **EU AI Act Annex XI/XII** | Auto-generated compliance documentation | 🚧 Roadmap |
 | **HIPAA / SOC 2** | Audit logs with retention and rotation policies | 🚧 Roadmap |
-| **Backdoor Scanning** | Spectral analysis for rank-1 dominant tensors | 🚧 Roadmap |
 
 ```bash
 forge bom emit --format cyclonedx     # Generate ML-BOM
 forge attest sign --key private.pem    # Sign the training attestation
+forge adapters scan ./my-lora --threshold 10.0 # Spectral anomaly scanning
+# ✓ Adapter is clean. (Scanned 64 layers)
 ```
 
 ### 🚀 Training Methods
@@ -303,30 +305,36 @@ forge attest sign --key private.pem    # Sign the training attestation
 
 ---
 
-## Roadmap (v1.0)
-
-While Forge currently handles end-to-end training, layer streaming, and cryptographic signing, the following features are actively being developed for the v1.0 release:
-
 ### 🔒 Ship Gate & Eval Engine
 
-One command decides if your fine-tune is safe to deploy:
+One command decides if your fine-tune is safe to deploy using local inference generation:
 
 ```bash
 forge ship --base ./base --adapter ./my-lora --task-eval task.jsonl
-# exit 0 = SHIP    ← adapter improves on base, no regressions
-# exit 2 = DON'T SHIP  ← regression detected
+# ✗ DON'T SHIP: Regression detected (Score 40.00% < Threshold 60.00%)
+# ✓ SHIP: Adapter passed gating (Score 95.00%)
 ```
 
-Built-in offline benchmark suites: MCQ · arithmetic · tool-calling · JSON validity · safety/refusal · over-refusal · instruction-following · common-sense.
+Built-in offline benchmark suites: MCQ · arithmetic · tool-calling · JSON validity.
 
 ### 👥 Team Workspaces
 
-Forge will support native team collaboration:
+Forge supports native team collaboration and Role-Based Access Control (RBAC) powered by a local SQLite engine:
 
 ```bash
-forge workspace init my-team           # Create a shared workspace
-forge workspace invite user@email.com  # Invite collaborators
-forge experiment share run_01 --team   # Share experiment with team
+forge workspace init "Forge Team"           
+# ✓ Initialized workspace for team: Forge Team (forge-team)
+
+forge workspace invite "forge-team" --email "demo@example.com" --role "contributor"
+# ✓ Invited demo@example.com to forge-team as contributor
+
+forge workspace list "forge-team"
+# ┌─────────────────────────┬─────────────┐
+# │ Email                   │ Role        │
+# ├─────────────────────────┼─────────────┤
+# │ demo@example.com        │ contributor │
+# │ local-admin@forge.local │ owner       │
+# └─────────────────────────┴─────────────┘
 ```
 
 - **RBAC**: Owner, Maintainer, Contributor, Viewer roles
@@ -334,6 +342,11 @@ forge experiment share run_01 --team   # Share experiment with team
 - **Audit trail**: Who trained what, when, with which data
 
 ---
+
+## Roadmap (v1.1)
+
+While Forge currently handles end-to-end training, layer streaming, and cryptographic signing, the following features are actively being developed for future releases:
+
 
 ## Quick Start
 
