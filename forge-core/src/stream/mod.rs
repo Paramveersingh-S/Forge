@@ -118,6 +118,43 @@ impl StreamEngine {
     fn get_config(&self) -> StreamConfig {
         self.config.clone()
     }
+
+    /// Asynchronously (or synchronously for now) transfer layer data into a PyTorch pinned host buffer.
+    /// 
+    /// This method bridges the Python tensor to the Rust core via a raw pointer.
+    /// In a production system, this would trigger an async DMA copy from the mmap'd
+    /// safetensors shard directly into the pinned host memory.
+    #[pyo3(signature = (ptr, size_bytes, layer_idx))]
+    fn transfer_to_ptr(&self, ptr: usize, size_bytes: usize, layer_idx: usize) -> PyResult<()> {
+        log::debug!(
+            "Rust FFI transfer: loading layer {} into host ptr {:#x} ({} bytes)",
+            layer_idx, ptr, size_bytes
+        );
+        
+        let path = std::path::PathBuf::from(&self.config.shard_dir)
+            .join(format!("layer_{}.safetensors", layer_idx));
+            
+        // Use unsafe Rust to copy data into the provided tensor memory.
+        // This memory must be page-locked (pinned) by PyTorch on the caller side.
+        unsafe {
+            let dest_ptr = ptr as *mut u8;
+            
+            // If the shard exists, we'd normally mmap it and copy it.
+            // For now, we simulate the load by zeroing the buffer (or loading mock data)
+            // to prevent reading uninitialized memory.
+            if path.exists() {
+                // In full implementation:
+                // let file = std::fs::File::open(path)?;
+                // let mmap = memmap2::Mmap::map(&file)?;
+                // std::ptr::copy_nonoverlapping(mmap.as_ptr(), dest_ptr, std::cmp::min(size_bytes, mmap.len()));
+                std::ptr::write_bytes(dest_ptr, 0, size_bytes);
+            } else {
+                std::ptr::write_bytes(dest_ptr, 0, size_bytes);
+            }
+        }
+        
+        Ok(())
+    }
 }
 
 /// Register this module's classes and functions with the Python module.

@@ -139,18 +139,15 @@ class SFTTrainer:
         if config.training.stream_layers:
             console.print("[dim]Wiring up layer streaming hooks...[/dim]")
             try:
-                from forge.stream.planner import StreamPlanner, StreamConfig
+                from forge.stream.planner import create_plan
                 from forge.stream.runtime import StreamRuntime
                 
-                # Mock a planner for the layers in the model
-                # In full implementation, we analyze model.model.layers
-                stream_cfg = StreamConfig(
-                    model_name=config.model.name,
-                    max_vram_gb=4.0, # Target laptop VRAM
+                # Create a stream plan (will fallback if model_path is not a local directory)
+                plan = create_plan(
+                    model_path=config.model.name,
                     num_buffers=2,
+                    max_vram_gb=4.0,
                 )
-                planner = StreamPlanner(stream_cfg)
-                plan = planner.plan()
                 runtime = StreamRuntime(plan)
                 
                 # Register forward pre-hooks on transformer layers to trigger prefetching

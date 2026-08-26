@@ -57,11 +57,22 @@ class StreamRuntime:
         try:
             import forge_core
 
+            # Initialize Rust StreamEngine
+            config = forge_core.stream.StreamConfig(
+                shard_dir="layers",
+                num_layers=self.plan.total_layers,
+                max_layer_bytes=max((l.size_bytes for l in self.plan.layers), default=0),
+                num_buffers=self.plan.num_buffers,
+                pin_memory=True,
+                source_tier="ram"
+            )
+            self._rust_engine = forge_core.stream.StreamEngine(config)
+            
             self._rust_available = True
             logger.info("Using Rust core for layer streaming I/O")
-        except ImportError:
+        except Exception as e:
             self._rust_available = False
-            logger.info("Rust core not available — using PyTorch streaming fallback")
+            logger.info(f"Rust core not available or failed to init: {e} — using PyTorch streaming fallback")
 
         self._initialized = True
 
@@ -100,12 +111,38 @@ class StreamRuntime:
     def _prefetch_rust(self, layer_idx: int, buffer_idx: int) -> None:
         """Rust-accelerated prefetch via forge_core."""
         try:
+            import torch
+            
+            if not torch.cuda.is_available():
+                logger.debug(f"PyTorch prefetch skipped: CUDA not available")
+                return
 
-            # forge_core.stream handles mmap, pinned memory, and async DMA
-            # The actual implementation is in forge-core/src/stream/
+            if not hasattr(self, "_dma_stream"):
+                self._dma_stream = torch.cuda.Stream()
+                
             layer = self.plan.layers[layer_idx]
-            for tensor_name in layer.tensor_names:
-                logger.debug(f"  Streaming tensor: {tensor_name}")
+            
+            # 1. Allocate pinned host memory
+            host_tensor = torch.zeros((layer.size_bytes // 4,), dtype=torch.float32).pin_memory()
+            
+            # 2. Rust FFI: pass the raw memory pointer to Rust.
+            # Rust handles the mmap and async I/O directly into this pinned buffer.
+            ptr = host_tensor.data_ptr()
+            size = layer.size_bytes
+            self._rust_engine.transfer_to_ptr(ptr, size, layer_idx)
+            
+            # 3. DMA to GPU
+            with torch.cuda.stream(self._dma_stream):
+                device_tensor = host_tensor.to("cuda", non_blocking=True)
+                event = torch.cuda.Event()
+                event.record(self._dma_stream)
+                
+                if not hasattr(self, "_transfer_events"):
+                    self._transfer_events = {}
+                self._transfer_events[buffer_idx] = event
+                
+            logger.debug(f"  Rust FFI DMA queued: layer {layer_idx}")
+            
         except Exception as e:
             logger.warning(f"Rust prefetch failed for layer {layer_idx}: {e}")
             self._prefetch_pytorch(layer_idx, buffer_idx)

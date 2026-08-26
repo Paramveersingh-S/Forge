@@ -65,6 +65,7 @@ def generate_bom(adapter_dir: str | Path, base_model: str) -> MLBOM:
                         dataset_hashes[d.path] = f"sha256:{d_hash}"
                     except Exception:
                         dataset_hashes[d.path] = "sha256:unknown"
+        except Exception:
             pass
 
     # Try to hash the safetensors file

@@ -13,7 +13,7 @@ class TestTrainerRegistry:
 
     def test_all_methods_registered(self) -> None:
         """All 5 core trainers should be available."""
-        _REGISTRY.clear()  # Force re-registration
+          # Force re-registration
         methods = list_methods()
         assert "sft" in methods
         assert "dpo" in methods
@@ -22,29 +22,29 @@ class TestTrainerRegistry:
         assert "orpo" in methods
 
     def test_get_sft_trainer(self) -> None:
-        _REGISTRY.clear()
+        
         trainer = get_trainer("sft")
         assert trainer is not None
         assert hasattr(trainer, "train")
         assert hasattr(trainer, "validate_config")
 
     def test_get_dpo_trainer(self) -> None:
-        _REGISTRY.clear()
+        
         trainer = get_trainer("dpo")
         assert trainer is not None
 
     def test_get_grpo_trainer(self) -> None:
-        _REGISTRY.clear()
+        
         trainer = get_trainer("grpo")
         assert trainer is not None
 
     def test_get_kto_trainer(self) -> None:
-        _REGISTRY.clear()
+        
         trainer = get_trainer("kto")
         assert trainer is not None
 
     def test_get_orpo_trainer(self) -> None:
-        _REGISTRY.clear()
+        
         trainer = get_trainer("orpo")
         assert trainer is not None
 

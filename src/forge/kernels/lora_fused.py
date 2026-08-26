@@ -146,8 +146,8 @@ def _triton_lora_fused_forward(
         acc_base = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
 
         for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-            x = tl.load(x_ptrs, mask=offs_m[:, None] < M & offs_k[None, :] < K, other=0.0)
-            w = tl.load(w_ptrs, mask=offs_k[:, None] < K & offs_n[None, :] < N, other=0.0)
+            x = tl.load(x_ptrs, mask=(offs_m[:, None] < M) & (offs_k[None, :] < K), other=0.0)
+            w = tl.load(w_ptrs, mask=(offs_k[:, None] < K) & (offs_n[None, :] < N), other=0.0)
             acc_base += tl.dot(x, w)
             x_ptrs += BLOCK_SIZE_K * stride_xk
             w_ptrs += BLOCK_SIZE_K * stride_wk
@@ -165,20 +165,20 @@ def _triton_lora_fused_forward(
         # x @ A
         xa = tl.zeros((BLOCK_SIZE_M, 32), dtype=tl.float32)
         for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-            x2 = tl.load(x_ptrs_2, mask=offs_m[:, None] < M & offs_k[None, :] < K, other=0.0)
-            a = tl.load(a_ptrs, mask=offs_k[:, None] < K & offs_r[None, :] < R, other=0.0)
+            x2 = tl.load(x_ptrs_2, mask=(offs_m[:, None] < M) & (offs_k[None, :] < K), other=0.0)
+            a = tl.load(a_ptrs, mask=(offs_k[:, None] < K) & (offs_r[None, :] < R), other=0.0)
             xa += tl.dot(x2, a)
             x_ptrs_2 += BLOCK_SIZE_K * stride_xk
             a_ptrs += BLOCK_SIZE_K * stride_ak
             
         # (x @ A) @ B
-        b = tl.load(b_ptrs, mask=offs_r[:, None] < R & offs_n[None, :] < N, other=0.0)
+        b = tl.load(b_ptrs, mask=(offs_r[:, None] < R) & (offs_n[None, :] < N), other=0.0)
         acc_lora += tl.dot(xa.to(tl.float16), b)
 
         # Base + LoRA
         out = acc_base + (acc_lora * scale)
         out_ptrs = Out_ptr + (offs_m[:, None] * stride_om + offs_n[None, :] * stride_on)
-        tl.store(out_ptrs, out.to(tl.float16), mask=offs_m[:, None] < M & offs_n[None, :] < N)
+        tl.store(out_ptrs, out.to(tl.float16), mask=(offs_m[:, None] < M) & (offs_n[None, :] < N))
 
     grid = lambda META: (
         triton.cdiv(M, META['BLOCK_SIZE_M']),
