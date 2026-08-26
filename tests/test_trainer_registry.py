@@ -10,8 +10,14 @@ class TestTrainerRegistry:
     """Test the decorator-based trainer registry."""
 
     def setup_method(self) -> None:
-        """Clear registry before each test."""
+        """Clear registry before each test, but backup first."""
+        self.original_registry = _REGISTRY.copy()
         _REGISTRY.clear()
+
+    def teardown_method(self) -> None:
+        """Restore original registry."""
+        _REGISTRY.clear()
+        _REGISTRY.update(self.original_registry)
 
     def test_register_and_retrieve(self) -> None:
         @register_trainer("test_method")

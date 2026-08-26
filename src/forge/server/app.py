@@ -25,7 +25,8 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup: initialize DB connection
     from forge.tracking import get_db
 
-    app.state.db = get_db()
+    if not hasattr(app.state, "db"):
+        app.state.db = get_db()
     yield
     # Shutdown: cleanup
     from forge.tracking import reset_db
