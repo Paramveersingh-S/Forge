@@ -192,9 +192,7 @@ class ForgeDB:
     def delete_experiment(self, experiment_id: str) -> bool:
         """Delete an experiment and all its data."""
         with self._lock, self._connect() as conn:
-            cursor = conn.execute(
-                "DELETE FROM experiments WHERE id = ?", (experiment_id,)
-            )
+            cursor = conn.execute("DELETE FROM experiments WHERE id = ?", (experiment_id,))
             return cursor.rowcount > 0
 
     def count_experiments(self, status: str | None = None) -> int:

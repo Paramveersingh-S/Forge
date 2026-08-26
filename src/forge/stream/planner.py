@@ -186,12 +186,14 @@ def _parse_layer_structure(st_files: list[Path]) -> list[LayerInfo]:
         tensors = layer_tensors[idx]
         total_size = sum(size for _, size in tensors)
         tensor_names = [name for name, _ in tensors]
-        layers.append(LayerInfo(
-            index=idx,
-            name=f"layer.{idx}",
-            size_bytes=total_size,
-            tensor_names=tensor_names,
-        ))
+        layers.append(
+            LayerInfo(
+                index=idx,
+                name=f"layer.{idx}",
+                size_bytes=total_size,
+                tensor_names=tensor_names,
+            )
+        )
 
     return layers
 

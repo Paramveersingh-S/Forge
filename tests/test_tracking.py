@@ -26,7 +26,10 @@ def populated_db(db: ForgeDB) -> ForgeDB:
     # Experiment 1 — SFT run
     eid1 = db.create_experiment(
         name="sft-llama3",
-        config={"model": {"name": "meta-llama/Llama-3-8B"}, "training": {"method": "sft", "lr": 2e-4}},
+        config={
+            "model": {"name": "meta-llama/Llama-3-8B"},
+            "training": {"method": "sft", "lr": 2e-4},
+        },
         tags=["sft", "llama3"],
     )
     for step in range(0, 100, 10):
@@ -37,7 +40,10 @@ def populated_db(db: ForgeDB) -> ForgeDB:
     # Experiment 2 — DPO run
     eid2 = db.create_experiment(
         name="dpo-llama3",
-        config={"model": {"name": "meta-llama/Llama-3-8B"}, "training": {"method": "dpo", "lr": 5e-5}},
+        config={
+            "model": {"name": "meta-llama/Llama-3-8B"},
+            "training": {"method": "dpo", "lr": 5e-5},
+        },
         tags=["dpo", "llama3"],
     )
     for step in range(0, 100, 10):
@@ -139,11 +145,14 @@ class TestMetrics:
 
     def test_log_metrics_batch(self, db: ForgeDB) -> None:
         eid = db.create_experiment(name="batch-test")
-        db.log_metrics_batch(eid, [
-            ("loss", 3.0, 0, None),
-            ("loss", 2.5, 10, None),
-            ("lr", 1e-4, 0, None),
-        ])
+        db.log_metrics_batch(
+            eid,
+            [
+                ("loss", 3.0, 0, None),
+                ("loss", 2.5, 10, None),
+                ("lr", 1e-4, 0, None),
+            ],
+        )
 
         loss_history = db.get_metric_history(eid, "loss")
         assert len(loss_history) == 2

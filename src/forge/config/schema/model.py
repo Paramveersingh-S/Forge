@@ -1,6 +1,5 @@
 """Model configuration schema."""
 
-
 from pydantic import BaseModel, Field
 
 

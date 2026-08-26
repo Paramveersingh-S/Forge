@@ -84,7 +84,9 @@ class ForgeTrainerCallback:
         self._ensure_initialized()
         logger.info("Forge tracking started for experiment %s", self._experiment_id)
 
-    def on_log(self, args: Any, state: Any, control: Any, logs: dict | None = None, **kwargs: Any) -> None:
+    def on_log(
+        self, args: Any, state: Any, control: Any, logs: dict | None = None, **kwargs: Any
+    ) -> None:
         """Called when the trainer logs metrics."""
         if logs is None:
             return
@@ -96,8 +98,7 @@ class ForgeTrainerCallback:
 
         # Filter out non-numeric values
         numeric_logs = {
-            k: float(v) for k, v in logs.items()
-            if isinstance(v, (int, float)) and k != "epoch"
+            k: float(v) for k, v in logs.items() if isinstance(v, (int, float)) and k != "epoch"
         }
 
         if numeric_logs:
@@ -142,7 +143,9 @@ class ForgeTrainerCallback:
 
         logger.info("Forge tracking completed for experiment %s", self._experiment_id)
 
-    def on_evaluate(self, args: Any, state: Any, control: Any, metrics: dict | None = None, **kwargs: Any) -> None:
+    def on_evaluate(
+        self, args: Any, state: Any, control: Any, metrics: dict | None = None, **kwargs: Any
+    ) -> None:
         """Called after evaluation."""
         if metrics is None:
             return

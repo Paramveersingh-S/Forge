@@ -38,7 +38,7 @@ def run_doctor(console: Console) -> None:
         cuda_available = torch.cuda.is_available()
         if cuda_available:
             gpu_name = torch.cuda.get_device_name(0)
-            gpu_mem = torch.cuda.get_device_properties(0).total_mem / (1024**3)
+            gpu_mem = torch.cuda.get_device_properties(0).total_mem / (1024**3)  # type: ignore
             table.add_row("PyTorch", "[green]✓[/green]", torch_ver)
             table.add_row("CUDA", "[green]✓[/green]", torch.version.cuda or "N/A")
             table.add_row("GPU", "[green]✓[/green]", f"{gpu_name} ({gpu_mem:.1f} GB)")

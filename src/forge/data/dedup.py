@@ -59,8 +59,7 @@ def find_near_duplicates(
         from datasketch import MinHash, MinHashLSH
     except ImportError:
         console.print(
-            "[red]✗ datasketch not installed.[/red]\n"
-            "  Install with: pip install 'forge-llm[data]'"
+            "[red]✗ datasketch not installed.[/red]\n  Install with: pip install 'forge-llm[data]'"
         )
         return []
 

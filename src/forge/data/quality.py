@@ -52,7 +52,7 @@ def compute_quality_report(
     }
 
     # Detect all unique keys
-    all_keys = set()
+    all_keys = set()  # type: ignore
     for r in records:
         all_keys.update(r.keys())
     report["columns"] = sorted(all_keys)
@@ -79,10 +79,7 @@ def compute_quality_report(
         }
 
     # Estimated token count (rough: chars / 4)
-    total_chars = sum(
-        sum(len(str(v)) for v in r.values() if isinstance(v, str))
-        for r in records
-    )
+    total_chars = sum(sum(len(str(v)) for v in r.values() if isinstance(v, str)) for r in records)
     report["estimated_tokens"] = total_chars // 4
 
     # Exact duplicate detection
@@ -120,7 +117,9 @@ def print_quality_report(report: dict[str, Any]) -> None:
     if "text_length" in report:
         tl = report["text_length"]
         console.print(f"\n  [dim]Text lengths ({tl['field']}):[/dim]")
-        console.print(f"    Min: {tl['min']}  Max: {tl['max']}  Mean: {tl['mean']}  Median: {tl['median']}")
+        console.print(
+            f"    Min: {tl['min']}  Max: {tl['max']}  Mean: {tl['mean']}  Median: {tl['median']}"
+        )
 
     # Duplicates
     if report.get("exact_duplicates", 0) > 0:
@@ -193,8 +192,15 @@ def _analyze_column(name: str, values: list) -> dict[str, Any]:
 def _find_text_fields(record: dict[str, Any]) -> list[str]:
     """Find the primary text fields in a record."""
     text_priority = [
-        "text", "content", "completion", "output", "response",
-        "instruction", "prompt", "question", "input",
+        "text",
+        "content",
+        "completion",
+        "output",
+        "response",
+        "instruction",
+        "prompt",
+        "question",
+        "input",
     ]
     found = []
     for field in text_priority:

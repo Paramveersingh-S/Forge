@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 @register_trainer("ppo")
 class PPOTrainer:
     """Proximal Policy Optimization (PPO) trainer.
-    
+
     Implements PPO using trl.PPOTrainer for RLHF.
     """
 
@@ -25,7 +25,7 @@ class PPOTrainer:
         Args:
             config: The parsed Forge configuration.
         """
-        self.config = config
+        self.config = config  # type: ignore
         self._model = None
         self._tokenizer = None
         self._ref_model = None
@@ -43,14 +43,14 @@ class PPOTrainer:
                 self.config.model.name,
                 trust_remote_code=self.config.model.trust_remote_code,
             )
-            
+
             logger.debug(f"Loading model {self.config.model.name}...")
             self._model = AutoModelForCausalLMWithValueHead.from_pretrained(
                 self.config.model.name,
                 device_map="auto" if torch.cuda.is_available() else None,
                 trust_remote_code=self.config.model.trust_remote_code,
             )
-            
+
             # For PPO, we also need a reference model, usually just a copy of the base model
             logger.debug("Creating reference model...")
             self._ref_model = AutoModelForCausalLMWithValueHead.from_pretrained(
@@ -65,18 +65,19 @@ class PPOTrainer:
         """Execute the PPO training loop."""
         self.config = config
         self.setup()
-        
+
         logger.info("Starting PPO training loop...")
-        
+
         try:
-            from trl import PPOTrainer as TRLPPOTrainer, PPOConfig
-            
+            from trl import PPOConfig
+            from trl import PPOTrainer as TRLPPOTrainer
+
             # Simple mock setup for demonstration
             ppo_config = PPOConfig(
                 batch_size=self.config.training.batch_size,
                 mini_batch_size=self.config.training.batch_size,
             )
-            
+
             # In a real run, this would be initialized with actual data and reward models
             logger.info("PPO training complete.")
         except ImportError:

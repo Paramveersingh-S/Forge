@@ -1,11 +1,18 @@
 """Training configuration schema."""
 
-
 from pydantic import BaseModel, Field
 
 SUPPORTED_METHODS = (
-    "sft", "dpo", "grpo", "kto", "orpo", "simpo", "ppo",
-    "distill", "reward_model", "unlearn",
+    "sft",
+    "dpo",
+    "grpo",
+    "kto",
+    "orpo",
+    "simpo",
+    "ppo",
+    "distill",
+    "reward_model",
+    "unlearn",
 )
 
 SUPPORTED_QUANTIZATIONS = ("none", "4bit", "8bit")

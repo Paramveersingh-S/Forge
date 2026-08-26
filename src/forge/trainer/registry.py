@@ -56,9 +56,7 @@ def get_trainer(method: str) -> TrainerProtocol:
 
     if method not in _REGISTRY:
         available = ", ".join(sorted(_REGISTRY.keys()))
-        raise ValueError(
-            f"Unknown training method '{method}'. Available: {available}"
-        )
+        raise ValueError(f"Unknown training method '{method}'. Available: {available}")
 
     trainer_cls = _REGISTRY[method]
     return trainer_cls()

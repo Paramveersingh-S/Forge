@@ -112,10 +112,13 @@ class TestConfigLoader:
 
     def test_load_simple_yaml(self) -> None:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            yaml.dump({
-                "model": {"name": "test/model"},
-                "training": {"method": "sft", "batch_size": 8},
-            }, f)
+            yaml.dump(
+                {
+                    "model": {"name": "test/model"},
+                    "training": {"method": "sft", "batch_size": 8},
+                },
+                f,
+            )
             f.flush()
 
             config = load_config(f.name)

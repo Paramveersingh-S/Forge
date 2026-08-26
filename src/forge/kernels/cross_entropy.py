@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 def fused_cross_entropy(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
+    logits: torch.Tensor,  # type: ignore
+    labels: torch.Tensor,  # type: ignore
     ignore_index: int = -100,
     reduction: str = "mean",
-) -> torch.Tensor:
+) -> torch.Tensor:  # type: ignore
     """Fused cross-entropy loss without full logits materialization.
 
     Automatically uses Triton kernel when available, otherwise
@@ -49,12 +49,12 @@ def fused_cross_entropy(
 
 
 def _pytorch_chunked_cross_entropy(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
+    logits: torch.Tensor,  # type: ignore
+    labels: torch.Tensor,  # type: ignore
     ignore_index: int,
     reduction: str,
     chunk_size: int = 4096,
-) -> torch.Tensor:
+) -> torch.Tensor:  # type: ignore
     """Chunked cross-entropy that processes vocab in chunks.
 
     Instead of computing softmax over the entire vocab at once,
@@ -104,11 +104,11 @@ def _pytorch_chunked_cross_entropy(
 
 
 def _triton_fused_cross_entropy(
-    logits: torch.Tensor,
-    labels: torch.Tensor,
+    logits: torch.Tensor,  # type: ignore
+    labels: torch.Tensor,  # type: ignore
     ignore_index: int,
     reduction: str,
-) -> torch.Tensor:
+) -> torch.Tensor:  # type: ignore
     """Triton-accelerated fused cross-entropy.
 
     Computes cross-entropy in a single kernel pass over the vocab
@@ -125,7 +125,7 @@ def _triton_fused_cross_entropy(
     losses = torch.empty(N, device=logits.device, dtype=logits.dtype)
 
     @triton.jit
-    def _cross_entropy_kernel(
+    def _cross_entropy_kernel(  # type: ignore
         logits_ptr,
         labels_ptr,
         losses_ptr,
@@ -174,9 +174,7 @@ def _triton_fused_cross_entropy(
     # Launch kernel
     BLOCK_V = triton.next_power_of_2(min(V, 4096))
     grid = (N,)
-    _cross_entropy_kernel[grid](
-        logits, labels, losses, V, BLOCK_V, ignore_index
-    )
+    _cross_entropy_kernel[grid](logits, labels, losses, V, BLOCK_V, ignore_index)
 
     # Reduction
     valid_mask = labels != ignore_index

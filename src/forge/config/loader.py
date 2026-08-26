@@ -54,8 +54,7 @@ def _resolve_fragment(name: str) -> Path:
             return candidate
 
     raise FileNotFoundError(
-        f"Config fragment not found: '{name}'. "
-        f"Searched: {[str(p) for p in _FRAGMENT_SEARCH_PATHS]}"
+        f"Config fragment not found: '{name}'. Searched: {[str(p) for p in _FRAGMENT_SEARCH_PATHS]}"
     )
 
 

@@ -98,7 +98,7 @@ class MetricsLogger:
 
             metrics["system/cpu_percent"] = psutil.cpu_percent()
             mem = psutil.virtual_memory()
-            metrics["system/ram_used_gb"] = mem.used / (1024 ** 3)
+            metrics["system/ram_used_gb"] = mem.used / (1024**3)
             metrics["system/ram_percent"] = mem.percent
         except ImportError:
             pass
@@ -109,8 +109,8 @@ class MetricsLogger:
 
             if torch.cuda.is_available():
                 for i in range(torch.cuda.device_count()):
-                    allocated = torch.cuda.memory_allocated(i) / (1024 ** 3)
-                    reserved = torch.cuda.memory_reserved(i) / (1024 ** 3)
+                    allocated = torch.cuda.memory_allocated(i) / (1024**3)
+                    reserved = torch.cuda.memory_reserved(i) / (1024**3)
                     metrics[f"gpu/{i}/vram_allocated_gb"] = allocated
                     metrics[f"gpu/{i}/vram_reserved_gb"] = reserved
         except ImportError:

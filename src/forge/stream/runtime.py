@@ -64,15 +64,17 @@ class StreamRuntime:
                 max_layer_bytes=max((l.size_bytes for l in self.plan.layers), default=0),
                 num_buffers=self.plan.num_buffers,
                 pin_memory=True,
-                source_tier="ram"
+                source_tier="ram",
             )
             self._rust_engine = forge_core.stream.StreamEngine(config)
-            
+
             self._rust_available = True
             logger.info("Using Rust core for layer streaming I/O")
         except Exception as e:
             self._rust_available = False
-            logger.info(f"Rust core not available or failed to init: {e} — using PyTorch streaming fallback")
+            logger.info(
+                f"Rust core not available or failed to init: {e} — using PyTorch streaming fallback"
+            )
 
         self._initialized = True
 
@@ -101,7 +103,9 @@ class StreamRuntime:
             return
 
         layer = self.plan.layers[layer_idx]
-        logger.debug(f"Prefetching layer {layer_idx} ({layer.size_mb:.1f} MB) → buffer {buffer_idx}")
+        logger.debug(
+            f"Prefetching layer {layer_idx} ({layer.size_mb:.1f} MB) → buffer {buffer_idx}"
+        )
 
         if self._rust_available:
             self._prefetch_rust(layer_idx, buffer_idx)
@@ -112,37 +116,37 @@ class StreamRuntime:
         """Rust-accelerated prefetch via forge_core."""
         try:
             import torch
-            
+
             if not torch.cuda.is_available():
-                logger.debug(f"PyTorch prefetch skipped: CUDA not available")
+                logger.debug("PyTorch prefetch skipped: CUDA not available")
                 return
 
             if not hasattr(self, "_dma_stream"):
                 self._dma_stream = torch.cuda.Stream()
-                
+
             layer = self.plan.layers[layer_idx]
-            
+
             # 1. Allocate pinned host memory
             host_tensor = torch.zeros((layer.size_bytes // 4,), dtype=torch.float32).pin_memory()
-            
+
             # 2. Rust FFI: pass the raw memory pointer to Rust.
             # Rust handles the mmap and async I/O directly into this pinned buffer.
             ptr = host_tensor.data_ptr()
             size = layer.size_bytes
             self._rust_engine.transfer_to_ptr(ptr, size, layer_idx)
-            
+
             # 3. DMA to GPU
             with torch.cuda.stream(self._dma_stream):
                 device_tensor = host_tensor.to("cuda", non_blocking=True)
                 event = torch.cuda.Event()
                 event.record(self._dma_stream)
-                
+
                 if not hasattr(self, "_transfer_events"):
                     self._transfer_events = {}
                 self._transfer_events[buffer_idx] = event
-                
+
             logger.debug(f"  Rust FFI DMA queued: layer {layer_idx}")
-            
+
         except Exception as e:
             logger.warning(f"Rust prefetch failed for layer {layer_idx}: {e}")
             self._prefetch_pytorch(layer_idx, buffer_idx)
@@ -153,51 +157,60 @@ class StreamRuntime:
             import torch
 
             if not torch.cuda.is_available():
-                logger.debug(f"PyTorch prefetch skipped: CUDA not available")
+                logger.debug("PyTorch prefetch skipped: CUDA not available")
                 return
 
             # Retrieve or create a CUDA stream for async DMA
             if not hasattr(self, "_dma_stream"):
                 self._dma_stream = torch.cuda.Stream()
-                
+
             layer = self.plan.layers[layer_idx]
-            
+
             # Authentic host-to-device streaming:
             # We load the safetensors block into a pinned host tensor, then DMA it.
             with torch.cuda.stream(self._dma_stream):
                 # Try to load actual safetensors file for this layer if it exists
                 # Fallback to zero allocation only if the shard isn't built yet
                 try:
-                    from safetensors.torch import load_file
                     import os
-                    
+
+                    from safetensors.torch import load_file
+
                     # Expected path format from forge/data/stream_builder.py or similar
                     shard_path = f"layers/layer_{layer_idx}.safetensors"
                     if os.path.exists(shard_path):
                         # Load actual layer weights directly into RAM
                         weights = load_file(shard_path)
                         # Flatten and concat all weights to represent the layer buffer
-                        host_tensor = torch.cat([t.flatten() for t in weights.values()]).pin_memory()
+                        host_tensor = torch.cat(
+                            [t.flatten() for t in weights.values()]
+                        ).pin_memory()
                     else:
-                        host_tensor = torch.zeros((layer.size_bytes // 4,), dtype=torch.float32).pin_memory()
+                        host_tensor = torch.zeros(
+                            (layer.size_bytes // 4,), dtype=torch.float32
+                        ).pin_memory()
                 except Exception as e:
                     logger.debug(f"Safetensors load failed, using zero buffer: {e}")
-                    host_tensor = torch.zeros((layer.size_bytes // 4,), dtype=torch.float32).pin_memory()
-                
+                    host_tensor = torch.zeros(
+                        (layer.size_bytes // 4,), dtype=torch.float32
+                    ).pin_memory()
+
                 # Async DMA copy to GPU
                 device_tensor = host_tensor.to("cuda", non_blocking=True)
-                
+
                 # Record event for compute synchronization
                 event = torch.cuda.Event()
                 event.record(self._dma_stream)
-                
-                logger.debug(f"  PyTorch DMA queued: layer {layer_idx} ({device_tensor.numel() * 4 / 1e6:.1f} MB)")
-                
+
+                logger.debug(
+                    f"  PyTorch DMA queued: layer {layer_idx} ({device_tensor.numel() * 4 / 1e6:.1f} MB)"
+                )
+
                 # Store the event so compute can wait on it
                 if not hasattr(self, "_transfer_events"):
                     self._transfer_events = {}
                 self._transfer_events[buffer_idx] = event
-                
+
         except ImportError:
             pass
         except Exception as e:

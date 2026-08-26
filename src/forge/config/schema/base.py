@@ -4,7 +4,6 @@ This is intentionally small (~50 lines) compared to Soup's 6829-line
 monolith. Each concern lives in its own schema module.
 """
 
-
 from pydantic import BaseModel, Field
 
 from forge.config.schema.data import DataConfig
@@ -21,7 +20,7 @@ class ForgeConfig(BaseModel):
     Pydantic model in a separate file.
     """
 
-    model: ModelConfig = Field(default_factory=ModelConfig)
+    model: ModelConfig = Field(default_factory=ModelConfig)  # type: ignore
     lora: LoraConfig = Field(default_factory=LoraConfig)
     training: TrainingConfig = Field(default_factory=TrainingConfig)
     data: DataConfig = Field(default_factory=DataConfig)

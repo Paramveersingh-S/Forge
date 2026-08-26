@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 @register_trainer("reward")
 class RewardTrainer:
     """Reward Model trainer.
-    
+
     Implements reward modeling for RLHF using trl.RewardTrainer.
     """
 
@@ -32,33 +32,34 @@ class RewardTrainer:
 
             logger.info("Setting up Reward Model trainer...")
             self._tokenizer = AutoTokenizer.from_pretrained(
-                self.config.model.name,
-                trust_remote_code=self.config.model.trust_remote_code,
+                self.config.model.name,  # type: ignore
+                trust_remote_code=self.config.model.trust_remote_code,  # type: ignore
             )
-            
+
             self._model = AutoModelForSequenceClassification.from_pretrained(
-                self.config.model.name,
+                self.config.model.name,  # type: ignore
                 num_labels=1,
                 device_map="auto" if torch.cuda.is_available() else None,
-                trust_remote_code=self.config.model.trust_remote_code,
+                trust_remote_code=self.config.model.trust_remote_code,  # type: ignore
             )
         except ImportError as e:
             logger.warning(f"Reward Model setup skipped (missing dependencies): {e}")
 
     def train(self, config: ForgeConfig, resume: bool = False) -> None:
         """Execute the Reward training loop."""
-        self.config = config
+        self.config = config  # type: ignore
         self.setup()
         logger.info("Starting Reward Model training loop...")
-        
+
         try:
-            from trl import RewardTrainer as TRLRewardTrainer, RewardConfig
-            
+            from trl import RewardConfig
+            from trl import RewardTrainer as TRLRewardTrainer
+
             reward_config = RewardConfig(
-                batch_size=self.config.training.batch_size,
-                max_length=self.config.training.max_seq_length or 1024,
+                batch_size=self.config.training.batch_size,  # type: ignore
+                max_length=self.config.training.max_seq_length or 1024,  # type: ignore
             )
-            
+
             logger.info("Reward Model training complete.")
         except ImportError:
             logger.error("trl library is required for Reward Model training.")

@@ -26,12 +26,12 @@ def evaluate_adapter(
     task_file: str | Path,
 ) -> dict[str, Any]:
     """Evaluate an adapter on a JSONL task file.
-    
+
     Args:
         base_model: Name or path to the base model.
         adapter_path: Path to the trained LoRA adapter.
         task_file: Path to a JSONL file with 'prompt' and 'expected' keys.
-        
+
     Returns:
         A dictionary with evaluation metrics (score, total, passed).
     """
@@ -49,7 +49,7 @@ def evaluate_adapter(
         raise FileNotFoundError(f"Task file not found: {task_path}")
 
     console.print(f"[cyan]Loading base model {base_model}...[/cyan]")
-    
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.float16 if device == "cuda" else torch.float32
 
@@ -60,9 +60,9 @@ def evaluate_adapter(
         device_map=device,
         low_cpu_mem_usage=True,
     )
-    
+
     console.print(f"[cyan]Applying adapter {adapter_path}...[/cyan]")
-    model = PeftModel.from_pretrained(model, adapter_path)
+    model = PeftModel.from_pretrained(model, adapter_path)  # type: ignore
     model.eval()
 
     generator = pipeline(
@@ -73,13 +73,13 @@ def evaluate_adapter(
     )
 
     console.print(f"[cyan]Running evaluation suite: {task_path.name}...[/cyan]")
-    
+
     tasks = []
-    with open(task_path, "r", encoding="utf-8") as f:
+    with open(task_path, encoding="utf-8") as f:
         for line in f:
             if line.strip():
                 tasks.append(json.loads(line))
-                
+
     if not tasks:
         console.print("[yellow]⚠ Task file is empty.[/yellow]")
         return {"score": 1.0, "passed": 0, "total": 0}
@@ -90,28 +90,28 @@ def evaluate_adapter(
     for idx, task in enumerate(tasks):
         prompt = task.get("prompt", "")
         expected = task.get("expected", "")
-        
+
         # Run inference
         outputs = generator(
-            prompt, 
+            prompt,
             max_new_tokens=32,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
         )
-        
-        generated_text = outputs[0]["generated_text"][len(prompt):].strip()
-        
+
+        generated_text = outputs[0]["generated_text"][len(prompt) :].strip()
+
         # Simple exact substring match for basic evaluation
         if expected.lower() in generated_text.lower():
             passed += 1
-            
+
         if idx % 10 == 0 and idx > 0:
             console.print(f"  Processed {idx}/{total} tasks...")
-            
+
     score = passed / total if total > 0 else 0.0
-    
+
     console.print(f"[green]✓ Evaluation complete. Score: {score:.1%} ({passed}/{total})[/green]")
-    
+
     return {
         "score": score,
         "passed": passed,

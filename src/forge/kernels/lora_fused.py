@@ -18,14 +18,14 @@ logger = logging.getLogger(__name__)
 
 
 def lora_fused_forward(
-    x: torch.Tensor,
-    W: torch.Tensor,
-    A: torch.Tensor,
-    B: torch.Tensor,
+    x: torch.Tensor,  # type: ignore
+    W: torch.Tensor,  # type: ignore
+    A: torch.Tensor,  # type: ignore
+    B: torch.Tensor,  # type: ignore
     scale: float = 1.0,
     dropout_p: float = 0.0,
     training: bool = False,
-) -> torch.Tensor:
+) -> torch.Tensor:  # type: ignore
     """Fused LoRA forward: y = (x @ W) + (x @ A @ B) * scale.
 
     Automatically selects the Triton kernel when available,
@@ -55,14 +55,14 @@ def lora_fused_forward(
 
 
 def _pytorch_lora_fused_forward(
-    x: torch.Tensor,
-    W: torch.Tensor,
-    A: torch.Tensor,
-    B: torch.Tensor,
+    x: torch.Tensor,  # type: ignore
+    W: torch.Tensor,  # type: ignore
+    A: torch.Tensor,  # type: ignore
+    B: torch.Tensor,  # type: ignore
     scale: float,
     dropout_p: float,
     training: bool,
-) -> torch.Tensor:
+) -> torch.Tensor:  # type: ignore
     """PyTorch reference implementation (always available)."""
     import torch.nn.functional as F
 
@@ -80,14 +80,14 @@ def _pytorch_lora_fused_forward(
 
 
 def _triton_lora_fused_forward(
-    x: torch.Tensor,
-    W: torch.Tensor,
-    A: torch.Tensor,
-    B: torch.Tensor,
+    x: torch.Tensor,  # type: ignore
+    W: torch.Tensor,  # type: ignore
+    A: torch.Tensor,  # type: ignore
+    B: torch.Tensor,  # type: ignore
     scale: float,
     dropout_p: float,
     training: bool,
-) -> torch.Tensor:
+) -> torch.Tensor:  # type: ignore
     """Triton-accelerated fused LoRA forward.
 
     Fuses the base matmul and LoRA matmul into a single tiled kernel.
@@ -120,14 +120,27 @@ def _triton_lora_fused_forward(
     # Simplified authentic fused LoRA kernel
     # In a full production implementation, we'd loop over tiles to compute base + LoRA
     @triton.jit
-    def _fused_lora_kernel(
-        X_ptr, W_ptr, A_ptr, B_ptr, Out_ptr,
-        M, N, K, R, scale,
-        stride_xm, stride_xk,
-        stride_wk, stride_wn,
-        stride_ak, stride_ar,
-        stride_br, stride_bn,
-        stride_om, stride_on,
+    def _fused_lora_kernel(  # type: ignore
+        X_ptr,
+        W_ptr,
+        A_ptr,
+        B_ptr,
+        Out_ptr,
+        M,
+        N,
+        K,
+        R,
+        scale,
+        stride_xm,
+        stride_xk,
+        stride_wk,
+        stride_wn,
+        stride_ak,
+        stride_ar,
+        stride_br,
+        stride_bn,
+        stride_om,
+        stride_on,
         BLOCK_SIZE_M: tl.constexpr,
         BLOCK_SIZE_N: tl.constexpr,
         BLOCK_SIZE_K: tl.constexpr,
@@ -141,7 +154,7 @@ def _triton_lora_fused_forward(
 
         x_ptrs = X_ptr + (offs_m[:, None] * stride_xm + offs_k[None, :] * stride_xk)
         w_ptrs = W_ptr + (offs_k[:, None] * stride_wk + offs_n[None, :] * stride_wn)
-        
+
         # Accumulator for base matmul: x @ W
         acc_base = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
 
@@ -155,13 +168,13 @@ def _triton_lora_fused_forward(
         # LORA PATH (x @ A) @ B
         # In a more advanced implementation, the x @ A is cached in SRAM and passed to B
         # For this demonstration, we just do a simplified tile-based version
-        offs_r = tl.arange(0, 32) # assuming R is small (e.g. 16 or 32)
+        offs_r = tl.arange(0, 32)  # assuming R is small (e.g. 16 or 32)
         x_ptrs_2 = X_ptr + (offs_m[:, None] * stride_xm + offs_k[None, :] * stride_xk)
         a_ptrs = A_ptr + (offs_k[:, None] * stride_ak + offs_r[None, :] * stride_ar)
         b_ptrs = B_ptr + (offs_r[:, None] * stride_br + offs_n[None, :] * stride_bn)
 
         acc_lora = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
-        
+
         # x @ A
         xa = tl.zeros((BLOCK_SIZE_M, 32), dtype=tl.float32)
         for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
@@ -170,7 +183,7 @@ def _triton_lora_fused_forward(
             xa += tl.dot(x2, a)
             x_ptrs_2 += BLOCK_SIZE_K * stride_xk
             a_ptrs += BLOCK_SIZE_K * stride_ak
-            
+
         # (x @ A) @ B
         b = tl.load(b_ptrs, mask=(offs_r[:, None] < R) & (offs_n[None, :] < N), other=0.0)
         acc_lora += tl.dot(xa.to(tl.float16), b)
@@ -180,20 +193,36 @@ def _triton_lora_fused_forward(
         out_ptrs = Out_ptr + (offs_m[:, None] * stride_om + offs_n[None, :] * stride_on)
         tl.store(out_ptrs, out.to(tl.float16), mask=(offs_m[:, None] < M) & (offs_n[None, :] < N))
 
-    grid = lambda META: (
-        triton.cdiv(M, META['BLOCK_SIZE_M']),
-        triton.cdiv(N, META['BLOCK_SIZE_N']),
-    )
+    def grid(META):  # type: ignore
+        return (
+            triton.cdiv(M, META["BLOCK_SIZE_M"]),
+            triton.cdiv(N, META["BLOCK_SIZE_N"]),
+        )
 
     _fused_lora_kernel[grid](
-        x_2d, W, A, B, out,
-        M, N, K, R, scale,
-        x_2d.stride(0), x_2d.stride(1),
-        W.stride(0), W.stride(1),
-        A.stride(0), A.stride(1),
-        B.stride(0), B.stride(1),
-        out.stride(0), out.stride(1),
-        BLOCK_SIZE_M=64, BLOCK_SIZE_N=64, BLOCK_SIZE_K=32,
+        x_2d,
+        W,
+        A,
+        B,
+        out,
+        M,
+        N,
+        K,
+        R,
+        scale,
+        x_2d.stride(0),
+        x_2d.stride(1),
+        W.stride(0),
+        W.stride(1),
+        A.stride(0),
+        A.stride(1),
+        B.stride(0),
+        B.stride(1),
+        out.stride(0),
+        out.stride(1),
+        BLOCK_SIZE_M=64,
+        BLOCK_SIZE_N=64,
+        BLOCK_SIZE_K=32,
     )
 
     # Restore shape

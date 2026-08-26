@@ -21,20 +21,24 @@ class TestFormatDetection:
 
     def test_detect_sharegpt(self) -> None:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
-            record = {"conversations": [
-                {"from": "human", "value": "Hello"},
-                {"from": "gpt", "value": "Hi there!"},
-            ]}
+            record = {
+                "conversations": [
+                    {"from": "human", "value": "Hello"},
+                    {"from": "gpt", "value": "Hi there!"},
+                ]
+            }
             f.write(json.dumps(record) + "\n")
             f.flush()
             assert detect_format(f.name) == "sharegpt"
 
     def test_detect_openai(self) -> None:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
-            record = {"messages": [
-                {"role": "user", "content": "Hello"},
-                {"role": "assistant", "content": "Hi!"},
-            ]}
+            record = {
+                "messages": [
+                    {"role": "user", "content": "Hello"},
+                    {"role": "assistant", "content": "Hi!"},
+                ]
+            }
             f.write(json.dumps(record) + "\n")
             f.flush()
             assert detect_format(f.name) == "openai"
@@ -65,10 +69,12 @@ class TestFormatConversion:
     """Test format conversions."""
 
     def test_sharegpt_to_openai(self) -> None:
-        record = {"conversations": [
-            {"from": "human", "value": "What is 2+2?"},
-            {"from": "gpt", "value": "4"},
-        ]}
+        record = {
+            "conversations": [
+                {"from": "human", "value": "What is 2+2?"},
+                {"from": "gpt", "value": "4"},
+            ]
+        }
         result = sharegpt_to_openai(record)
         assert "messages" in result
         assert len(result["messages"]) == 2
@@ -89,10 +95,12 @@ class TestFormatConversion:
         assert result["messages"][1]["role"] == "assistant"
 
     def test_openai_to_sharegpt_roundtrip(self) -> None:
-        original = {"conversations": [
-            {"from": "human", "value": "Hi"},
-            {"from": "gpt", "value": "Hello!"},
-        ]}
+        original = {
+            "conversations": [
+                {"from": "human", "value": "Hi"},
+                {"from": "gpt", "value": "Hello!"},
+            ]
+        }
         openai_format = sharegpt_to_openai(original)
         back = openai_to_sharegpt(openai_format)
         assert back["conversations"][0]["from"] == "human"
@@ -105,10 +113,12 @@ class TestFormatConversion:
 
     def test_convert_record_two_hop(self) -> None:
         """Test conversion via OpenAI intermediate (sharegpt → alpaca)."""
-        record = {"conversations": [
-            {"from": "human", "value": "Explain gravity"},
-            {"from": "gpt", "value": "Gravity is a force..."},
-        ]}
+        record = {
+            "conversations": [
+                {"from": "human", "value": "Explain gravity"},
+                {"from": "gpt", "value": "Gravity is a force..."},
+            ]
+        }
         result = convert_record(record, "sharegpt", "alpaca")
         assert "instruction" in result
         assert "output" in result

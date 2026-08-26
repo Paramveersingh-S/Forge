@@ -84,10 +84,12 @@ def openai_to_sharegpt(record: dict[str, Any]) -> dict[str, Any]:
     role_map = {"user": "human", "assistant": "gpt", "system": "system"}
     conversations = []
     for msg in record.get("messages", []):
-        conversations.append({
-            "from": role_map.get(msg.get("role", ""), msg.get("role", "")),
-            "value": msg.get("content", ""),
-        })
+        conversations.append(
+            {
+                "from": role_map.get(msg.get("role", ""), msg.get("role", "")),
+                "value": msg.get("content", ""),
+            }
+        )
     return {"conversations": conversations}
 
 

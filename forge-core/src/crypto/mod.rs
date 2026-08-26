@@ -3,13 +3,13 @@
 //! - **ed25519**: Detached signatures for adapter weight files.
 //! - **SHA-256**: Content-addressable checksums for reproducibility.
 
+use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use pyo3::prelude::*;
+use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use ed25519_dalek::{SigningKey, VerifyingKey, Signer};
-use rand::rngs::OsRng;
 
 /// Compute SHA-256 hex digest of a file.
 #[pyfunction]
@@ -47,10 +47,10 @@ pub fn generate_ed25519_keypair() -> (String, String) {
     let mut csprng = OsRng;
     let signing_key: SigningKey = SigningKey::generate(&mut csprng);
     let verifying_key: VerifyingKey = signing_key.verifying_key();
-    
+
     let priv_hex = hex::encode(signing_key.to_bytes());
     let pub_hex = hex::encode(verifying_key.to_bytes());
-    
+
     (priv_hex, pub_hex)
 }
 
@@ -59,11 +59,14 @@ pub fn generate_ed25519_keypair() -> (String, String) {
 pub fn sign_message(private_key_hex: &str, message: &[u8]) -> PyResult<String> {
     let priv_bytes = hex::decode(private_key_hex)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid hex: {}", e)))?;
-        
-    let signing_key = SigningKey::from_bytes(priv_bytes.as_slice().try_into().map_err(|_| {
-        pyo3::exceptions::PyValueError::new_err("Invalid private key length")
-    })?);
-    
+
+    let signing_key = SigningKey::from_bytes(
+        priv_bytes
+            .as_slice()
+            .try_into()
+            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid private key length"))?,
+    );
+
     let signature = signing_key.sign(message);
     Ok(hex::encode(signature.to_bytes()))
 }
@@ -73,18 +76,25 @@ pub fn sign_message(private_key_hex: &str, message: &[u8]) -> PyResult<String> {
 pub fn verify_message(public_key_hex: &str, message: &[u8], signature_hex: &str) -> PyResult<bool> {
     let pub_bytes = hex::decode(public_key_hex)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid hex: {}", e)))?;
-        
-    let verifying_key = VerifyingKey::from_bytes(pub_bytes.as_slice().try_into().map_err(|_| {
-        pyo3::exceptions::PyValueError::new_err("Invalid public key length")
-    })?).map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid public key: {}", e)))?;
-    
+
+    let verifying_key = VerifyingKey::from_bytes(
+        pub_bytes
+            .as_slice()
+            .try_into()
+            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid public key length"))?,
+    )
+    .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid public key: {}", e)))?;
+
     let sig_bytes = hex::decode(signature_hex)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid hex: {}", e)))?;
-        
-    let signature = ed25519_dalek::Signature::from_bytes(sig_bytes.as_slice().try_into().map_err(|_| {
-        pyo3::exceptions::PyValueError::new_err("Invalid signature length")
-    })?);
-    
+
+    let signature = ed25519_dalek::Signature::from_bytes(
+        sig_bytes
+            .as_slice()
+            .try_into()
+            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid signature length"))?,
+    );
+
     Ok(verifying_key.verify_strict(message, &signature).is_ok())
 }
 

@@ -60,17 +60,19 @@ def _get_gpu_info() -> dict[str, Any]:
             props = torch.cuda.get_device_properties(i)
             allocated = torch.cuda.memory_allocated(i)
             reserved = torch.cuda.memory_reserved(i)
-            total = props.total_mem
+            total = props.total_mem  # type: ignore
 
-            devices.append({
-                "index": i,
-                "name": props.name,
-                "total_memory_gb": round(total / (1024 ** 3), 2),
-                "allocated_gb": round(allocated / (1024 ** 3), 2),
-                "reserved_gb": round(reserved / (1024 ** 3), 2),
-                "free_gb": round((total - reserved) / (1024 ** 3), 2),
-                "utilization_percent": round(allocated / total * 100, 1) if total > 0 else 0,
-            })
+            devices.append(
+                {
+                    "index": i,
+                    "name": props.name,
+                    "total_memory_gb": round(total / (1024**3), 2),
+                    "allocated_gb": round(allocated / (1024**3), 2),
+                    "reserved_gb": round(reserved / (1024**3), 2),
+                    "free_gb": round((total - reserved) / (1024**3), 2),
+                    "utilization_percent": round(allocated / total * 100, 1) if total > 0 else 0,
+                }
+            )
 
         info["devices"] = devices
     except ImportError:
@@ -82,8 +84,8 @@ def _get_gpu_info() -> dict[str, Any]:
 
         mem = psutil.virtual_memory()
         info["system_ram"] = {
-            "total_gb": round(mem.total / (1024 ** 3), 2),
-            "used_gb": round(mem.used / (1024 ** 3), 2),
+            "total_gb": round(mem.total / (1024**3), 2),
+            "used_gb": round(mem.used / (1024**3), 2),
             "percent": mem.percent,
         }
         info["cpu_percent"] = psutil.cpu_percent(interval=0.1)

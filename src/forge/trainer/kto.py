@@ -91,10 +91,12 @@ class KTOTrainer:
 
         # Apply LoRA
         if config.lora.r > 0:
-            console.print(f"[dim]Applying LoRA (r={config.lora.r}, alpha={config.lora.alpha})...[/dim]")
+            console.print(
+                f"[dim]Applying LoRA (r={config.lora.r}, alpha={config.lora.alpha})...[/dim]"
+            )
             target_modules = config.lora.target_modules
             if isinstance(target_modules, str) and target_modules == "auto":
-                target_modules = None
+                target_modules = None  # type: ignore
 
             peft_config = PeftLoraConfig(
                 r=config.lora.r,
@@ -105,8 +107,8 @@ class KTOTrainer:
                 use_rslora=config.lora.use_rslora,
                 task_type="CAUSAL_LM",
             )
-            model = get_peft_model(model, peft_config)
-            model.print_trainable_parameters()
+            model = get_peft_model(model, peft_config)  # type: ignore
+            model.print_trainable_parameters()  # type: ignore
 
         # Reference model for KTO
         console.print("[dim]Creating reference model...[/dim]")
@@ -148,6 +150,7 @@ class KTOTrainer:
 
         # Add tracking callback
         from forge.tracking.callback import ForgeTrainerCallback
+
         tracking_callback = ForgeTrainerCallback(
             experiment_name=config.project_name or config.model.name.split("/")[-1],
             config=config.model_dump(),
@@ -169,6 +172,8 @@ class KTOTrainer:
         trainer.train(resume_from_checkpoint=resume if resume else None)
 
         # Save
-        console.print(f"\n[green]✓[/green] KTO training complete. Saving to {config.training.output_dir}")
+        console.print(
+            f"\n[green]✓[/green] KTO training complete. Saving to {config.training.output_dir}"
+        )
         trainer.save_model()
         tokenizer.save_pretrained(config.training.output_dir)
