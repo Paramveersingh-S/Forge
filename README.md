@@ -473,6 +473,15 @@ forge/
 
 ---
 
+## Validation & Benchmarks
+
+To ensure the load-bearing claims of Forge are verifiable, the test suite includes integration and validation tests:
+
+- **End-to-End CPU Integration Test**: Run via `pytest tests/test_integration.py`. This test mocks a tiny LLM and runs a complete SFT training loop on the CPU. It verifies that the `StreamRuntime` successfully attaches forward pre-hooks and correctly triggers the async Rust-FFI memory transfer operations (`transfer_to_ptr`) for each decoder layer without crashing. 
+- **Triton Kernels**: The fused LoRA and cross-entropy kernels are actively tested and validated against PyTorch fallbacks.
+
+---
+
 ## Contributing
 
 We welcome contributions! Forge uses a CI-first workflow — every PR must pass the full test suite before merge.
