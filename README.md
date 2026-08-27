@@ -481,7 +481,25 @@ To ensure the load-bearing claims of Forge are verifiable, the test suite includ
 
 - **End-to-End CPU Integration Test**: Run via `pytest tests/test_integration.py`. This test mocks a tiny LLM and runs a complete SFT training loop on the CPU. It verifies that the `StreamRuntime` successfully attaches forward pre-hooks and correctly triggers the async Rust-FFI memory transfer operations (`transfer_to_ptr`) for each decoder layer without crashing. 
 - **Triton Kernels**: The fused LoRA and cross-entropy kernels are actively tested and validated against PyTorch fallbacks. 
-  - **Performance Reality Check**: Initial benchmarking on a T4 GPU shows the custom Triton `lora_fused_forward` kernel is currently heavily unoptimized **(1-4 GB/s)** compared to the PyTorch fallback **(20-139 GB/s)**. While correctness is verified and peak memory is slightly lower (e.g., 334 MB vs 372 MB for M=2432), the Triton kernel requires significant tuning (e.g., `@triton.autotune`, better block sizing) before being suitable for production speedups.
+  - **Performance Reality Check (T4 GPU)**: The custom Triton `lora_fused_forward` kernel is mathematically correct and saves a small amount of memory, but is currently severely unoptimized for speed due to hardcoded block sizes and lack of `@triton.autotune`. 
+
+#### 📊 Fused LoRA Benchmark Results
+
+When evaluated on a T4 GPU across varying sequence lengths (`M`), the native PyTorch fallback drastically outperforms the raw Triton kernel in throughput, though Triton edges out slightly on memory consumption at large sequence lengths.
+
+| Sequence Length (M) | Triton Throughput (GB/s) | PyTorch Throughput (GB/s) | Peak Memory: Triton | Peak Memory: PyTorch |
+|:---:|:---:|:---:|:---:|:---:|
+| 256 | 4.87 | 111.91 | 292.50 MB | 304.62 MB |
+| 512 | 3.02 | 59.08 | 304.62 MB | 312.62 MB |
+| 1024 | 1.78 | 39.88 | 312.62 MB | 328.62 MB |
+| 1536 | 1.44 | 30.63 | 320.62 MB | 344.62 MB |
+| 2048 | 1.21 | 24.25 | 328.62 MB | 360.62 MB |
+| 2432 | 1.11 | 22.74 | 334.62 MB | 372.62 MB |
+
+**Interpretation:**
+- **Throughput bottleneck:** The custom Triton kernel calculates operations almost sequentially due to poor default heuristics (`BLOCK_SIZE_K=32` over large reductions). PyTorch easily outperforms it by 20-30x because PyTorch's backend invokes highly tuned cuBLAS kernels under the hood.
+- **Memory efficiency:** The Triton kernel correctly achieves its goal of avoiding materializing intermediate buffers. At `M=2432`, the fused kernel consumes ~38 MB less VRAM than the PyTorch fallback (an ~11% reduction in intermediate memory overhead for the forward pass).
+- **Next steps for the community:** The kernel logic is sound, but requires `@triton.autotune` profiles and tiled reduction loops to be viable for production workloads.
 
 ---
 
