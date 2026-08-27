@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # PyO3 for Python FFI
-pyo3 = { version = "0.22" }
+pyo3 = { version = "0.22", features = ["extension-module"] }
 # Memory-mapped I/O
 memmap2 = "0.9"
 # Async runtime for DMA scheduling
@@ -43,5 +43,4 @@ lto = "thin"
 codegen-units = 1
 
 [features]
-extension-module = ["pyo3/extension-module"]
 default = []
