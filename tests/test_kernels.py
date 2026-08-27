@@ -29,7 +29,7 @@ def test_quantized_matmul():
     x = torch.randn((M, K), dtype=torch.float16, device="cuda")
     
     # NF4 mock (2 values per byte for 4-bit)
-    W_q = torch.randint(0, 256, (K, N // 2), dtype=torch.uint8, device="cuda")
+    W_q = torch.randint(0, 256, (K // 2, N), dtype=torch.uint8, device="cuda")
     absmax = torch.ones((K // 64, N), dtype=torch.float16, device="cuda")
 
     out_pt = _pytorch_quantized_matmul(x, W_q, absmax, torch.zeros_like(absmax), group_size=64, bits=4)
@@ -47,4 +47,4 @@ def test_fused_cross_entropy():
     loss_pt = _pytorch_chunked_cross_entropy(logits, targets, ignore_index=-100, reduction="mean")
     loss_triton = fused_cross_entropy(logits, targets)
 
-    torch.testing.assert_close(loss_triton, loss_pt, atol=1e-2, rtol=1e-2)
+    torch.testing.assert_close(loss_triton.float(), loss_pt.float(), atol=1e-2, rtol=1e-2)
