@@ -480,7 +480,8 @@ forge/
 To ensure the load-bearing claims of Forge are verifiable, the test suite includes integration and validation tests:
 
 - **End-to-End CPU Integration Test**: Run via `pytest tests/test_integration.py`. This test mocks a tiny LLM and runs a complete SFT training loop on the CPU. It verifies that the `StreamRuntime` successfully attaches forward pre-hooks and correctly triggers the async Rust-FFI memory transfer operations (`transfer_to_ptr`) for each decoder layer without crashing. 
-- **Triton Kernels**: The fused LoRA and cross-entropy kernels are actively tested and validated against PyTorch fallbacks.
+- **Triton Kernels**: The fused LoRA and cross-entropy kernels are actively tested and validated against PyTorch fallbacks. 
+  - **Performance Reality Check**: Initial benchmarking on a T4 GPU shows the custom Triton `lora_fused_forward` kernel is currently heavily unoptimized **(1-4 GB/s)** compared to the PyTorch fallback **(20-139 GB/s)**. While correctness is verified and peak memory is slightly lower (e.g., 334 MB vs 372 MB for M=2432), the Triton kernel requires significant tuning (e.g., `@triton.autotune`, better block sizing) before being suitable for production speedups.
 
 ---
 
