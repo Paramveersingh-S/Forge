@@ -131,16 +131,44 @@ def evaluate(
 
 @app.command()
 def ship(
-    base: str = typer.Option(..., "--base", "-b", help="Path to the base model."),
-    adapter: str = typer.Option(..., "--adapter", "-a", help="Path to the adapter."),
-    task_eval: str = typer.Option(None, "--task-eval", help="Task-specific eval JSONL."),
+    base: str = typer.Argument(..., help="Path to the base model."),
+    adapter: str = typer.Argument(..., help="Path to the trained adapter."),
 ) -> None:
-    """Run the ship gate — SHIP or DON'T SHIP verdict."""
-    console.print("[bold blue]forge ship[/bold blue]")
+    """Run governance checks (ML-BOM, attestation) and ship to registry."""
+    import json
+    from pathlib import Path
+    
+    from forge.governance.attest import sign_bom
+    from forge.governance.bom import generate_bom
+
+    console.print("[bold blue]forge ship[/bold blue] — Governance & Attestation")
     console.print(f"  Base:    {base}")
     console.print(f"  Adapter: {adapter}")
-    # TODO: Implement ship gate
-    console.print("[yellow]⚠[/yellow] Ship gate not yet implemented.")
+    
+    adapter_path = Path(adapter)
+    if not adapter_path.exists():
+        console.print(f"[red]✗ Adapter path does not exist: {adapter}[/red]")
+        raise SystemExit(1)
+        
+    console.print("\n[bold cyan]Generating ML-BOM...[/bold cyan]")
+    bom = generate_bom(adapter, base)
+    
+    bom_path = adapter_path / "ml-bom.json"
+    bom_path.write_text(bom.to_json(), encoding="utf-8")
+    console.print(f"  [green]✓[/green] ML-BOM generated: {bom_path}")
+    
+    console.print("\n[bold cyan]Cryptographically signing artifact...[/bold cyan]")
+    try:
+        signature = sign_bom(bom)
+        sig_path = adapter_path / "ml-bom.sig"
+        sig_path.write_text(signature, encoding="utf-8")
+        console.print(f"  [green]✓[/green] Signed artifact: {sig_path}")
+        console.print(f"  [dim]Signature: {signature[:32]}...[/dim]")
+    except Exception as e:
+        console.print(f"[red]✗ Signing failed: {e}[/red]")
+        raise SystemExit(1)
+        
+    console.print("\n[bold green]✓ Ready for deployment.[/bold green]")
 
 
 @app.command()
@@ -150,10 +178,18 @@ def export(
     quant: str = typer.Option("q4_k_m", "--quant", "-q", help="Quantization level for GGUF."),
 ) -> None:
     """Export adapter to deployment format."""
+    from forge.export.engine import export_model
+    
     console.print(f"[bold blue]forge export[/bold blue] — format: {format}, quant: {quant}")
     console.print(f"  Adapter: {adapter}")
-    # TODO: Implement export
-    console.print("[yellow]⚠[/yellow] Export engine not yet implemented.")
+    
+    console.print("\n[bold cyan]Exporting model...[/bold cyan]")
+    try:
+        out_path = export_model(adapter, format, quant)
+        console.print(f"  [green]✓[/green] Export successful: {out_path}")
+    except Exception as e:
+        console.print(f"[red]✗ Export failed: {e}[/red]")
+        raise SystemExit(1)
 
 
 
@@ -395,6 +431,40 @@ def experiment(
     else:
         console.print(f"[red]✗ Unknown action: {action}[/red]")
         console.print("  Available: list, show, compare, delete, leaderboard")
+
+
+@app.command()
+def deploy(
+    adapter: str = typer.Argument(..., help="Path to the exported model (GGUF or Safetensors)."),
+    target: str = typer.Option("ollama", "--target", "-t", help="Deployment target (ollama, vllm)."),
+    name: str = typer.Option("forge-model", "--name", "-n", help="Name for the deployed model."),
+    output_dir: str = typer.Option("./deployments", "--out", "-o", help="Output directory for manifests (vllm only)."),
+) -> None:
+    """Deploy the model to a local inference engine or cluster."""
+    console.print(f"[bold blue]forge deploy[/bold blue] — target: {target}")
+    
+    try:
+        if target.lower() == "ollama":
+            from forge.deploy.ollama import deploy_to_ollama
+            console.print("\n[bold cyan]Deploying to Ollama...[/bold cyan]")
+            deploy_to_ollama(name, adapter)
+            console.print(f"  [green]✓[/green] Successfully deployed '{name}' to Ollama!")
+            console.print(f"  Run with: [bold]ollama run {name}[/bold]")
+        
+        elif target.lower() == "vllm":
+            from forge.deploy.vllm import generate_k8s_manifests
+            console.print("\n[bold cyan]Generating vLLM Kubernetes manifests...[/bold cyan]")
+            manifest_path = generate_k8s_manifests(name, adapter, output_dir)
+            console.print(f"  [green]✓[/green] Generated manifest: {manifest_path}")
+            console.print(f"  Apply with: [bold]kubectl apply -f {manifest_path}[/bold]")
+            
+        else:
+            console.print(f"[red]✗ Unknown target: {target}[/red]")
+            raise SystemExit(1)
+            
+    except Exception as e:
+        console.print(f"[red]✗ Deployment failed: {e}[/red]")
+        raise SystemExit(1)
 
 
 # --- Entry point --------------------------------------------------------------
