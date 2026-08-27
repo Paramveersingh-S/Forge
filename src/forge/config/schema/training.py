@@ -9,7 +9,6 @@ SUPPORTED_METHODS = (
     "kto",
     "orpo",
     "simpo",
-    "ppo",
     "distill",
     "reward_model",
     "unlearn",

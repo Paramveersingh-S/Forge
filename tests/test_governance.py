@@ -46,3 +46,16 @@ def test_attestation(tmp_path: Path):
 
     # Verify bad signature fails
     assert not verify_signature(bom, "mock_sig_badbeef", key_path.with_suffix(".pub"))
+
+def test_attestation_fallback(tmp_path: Path):
+    from unittest.mock import patch
+    bom = MLBOM(model_name="test", base_model="base", training_method="test", forge_version="test")
+    key_path = tmp_path / "id_ed25519_fallback"
+
+    with patch.dict('sys.modules', {'forge_core.crypto': None}):
+        sig = sign_bom(bom, private_key_path=key_path)
+        assert sig.startswith("mock_sig_")
+        assert verify_signature(bom, sig, key_path.with_suffix(".pub"))
+        
+        # also check the real-sig fallback (should return True and log warning)
+        assert verify_signature(bom, "real_rust_signature_123", key_path.with_suffix(".pub"))

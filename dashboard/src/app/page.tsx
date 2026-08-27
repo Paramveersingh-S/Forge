@@ -80,7 +80,7 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {experiments.map((exp, i) => (
+              {experiments.map((exp) => (
                 <tr key={exp.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                   <td className="p-4 font-medium text-blue-400">
                     <Link href={`/experiments/${exp.id}`}>{exp.name}</Link>

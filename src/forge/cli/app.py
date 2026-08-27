@@ -204,16 +204,17 @@ def export(
         "gguf", "--format", "-f", help="Export format (gguf, safetensors, onnx)."
     ),
     quant: str = typer.Option("q4_k_m", "--quant", "-q", help="Quantization level for GGUF."),
+    mock: bool = typer.Option(False, "--mock", help="Use mocked export for testing."),
 ) -> None:
     """Export adapter to deployment format."""
     from forge.export.engine import export_model
 
-    console.print(f"[bold blue]forge export[/bold blue] — format: {format}, quant: {quant}")
+    console.print(f"[bold blue]forge export[/bold blue] — format: {format}, quant: {quant}, mock: {mock}")
     console.print(f"  Adapter: {adapter}")
 
     console.print("\n[bold cyan]Exporting model...[/bold cyan]")
     try:
-        out_path = export_model(adapter, format, quant)
+        out_path = export_model(adapter, format, quant, mock=mock)
         console.print(f"  [green]✓[/green] Export successful: {out_path}")
     except Exception as e:
         console.print(f"[red]✗ Export failed: {e}[/red]")

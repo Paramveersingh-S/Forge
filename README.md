@@ -5,7 +5,7 @@
 <h1 align="center">Forge</h1>
 
 <p align="center">
-  <strong>Shape raw models into production weapons. Rust-accelerated LLM fine-tuning with built-in provenance.</strong>
+  <strong>Rust-accelerated LLM fine-tuning with built-in provenance.</strong>
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@ forge init --preset llama3-8b-chat
 forge train
 ```
 
-Fine-tune **Llama-3.1-8B on a 4 GB laptop GPU**. The Rust-powered layer streaming engine keeps the frozen base in system RAM and feeds it to the GPU one decoder layer at a time through async DMA — peak VRAM is bounded by a single layer, not the whole model.
+The Rust-powered layer streaming engine is designed to keep the frozen base in system RAM and feed it to the GPU one decoder layer at a time through async DMA — aiming to bound peak VRAM by a single layer, not the whole model. See [BENCHMARKS.md](BENCHMARKS.md) for current measurements and goals.
 
 ```yaml
 # forge.yaml — composable config
@@ -58,16 +58,16 @@ training:
 
 Training LLMs is still painful. Even experienced teams spend 30–50% of their time fighting infrastructure instead of improving models. Existing tools make you choose between **speed** (Unsloth), **flexibility** (Axolotl), or **simplicity** (LLaMA-Factory). Forge refuses the trade-off.
 
-| Dimension | Soup CLI | Unsloth | Axolotl | **Forge** |
-|:---|:---|:---|:---|:---|
-| **I/O Core** | Python | Python | Python | **Rust (PyO3)** |
-| **GPU Kernels** | Upstream HF | Custom Triton | Standard | **Custom Triton** |
-| **Config** | Monolithic 6800-line schema | Python API | YAML | **Composable YAML fragments** |
-| **Memory** | Layer streaming (Python) | Triton-optimized | Standard | **Rust layer streaming + Triton** |
-| **Provenance** | CLI-only BOM | ✗ | ✗ | **Full stack + team audit** |
-| **Experiments** | External only | ✗ | ✗ | **Built-in SQLite tracker** |
-| **Team Mode** | Single user | Single user | Single user | **Team workspaces + RBAC** |
-| **CI/CD** | Basic | ✗ | ✗ | **First-class GitHub Actions** |
+| Dimension | Soup CLI | Unsloth | Axolotl | **Forge** | Status |
+|:---|:---|:---|:---|:---|:---|
+| **I/O Core** | Python | Python | Python | **Rust (PyO3)** | ✅ Working |
+| **GPU Kernels** | Upstream HF | Custom Triton | Standard | **Custom Triton** | ⚠️ Partial |
+| **Config** | Monolithic 6800-line schema | Python API | YAML | **Composable YAML fragments** | ✅ Working |
+| **Memory** | Layer streaming (Python) | Triton-optimized | Standard | **Rust layer streaming + Triton** | ⚠️ Partial |
+| **Provenance** | CLI-only BOM | ✗ | ✗ | **Full stack + team audit** | ⚠️ Partial |
+| **Experiments** | External only | ✗ | ✗ | **Built-in SQLite tracker** | ✅ Working |
+| **Team Mode** | Single user | Single user | Single user | **Local RBAC bookkeeping (single-machine)** | 🚧 Planned |
+| **CI/CD** | Basic | ✗ | ✗ | **First-class GitHub Actions** | ✅ Working |
 
 ---
 
@@ -214,9 +214,9 @@ Three fused kernels eliminate redundant memory round-trips:
 
 | Kernel | What It Fuses | VRAM Savings |
 |:---|:---|:---|
-| `lora_fused_forward` | `(x @ W) + (x @ A @ B) * scale` — 3 matmuls → 1 | ~30% fewer intermediates |
-| `fused_cross_entropy` | Softmax + log + NLL without materializing logits | Saves `batch × seq × vocab` tensor |
-| `quantized_matmul` | NF4 dequantize + GEMM in one pass | No dequantized copy |
+| `lora_fused_forward` | `(x @ W) + (x @ A @ B) * scale` — 3 matmuls → 1 | (See Benchmarks) |
+| `fused_cross_entropy` | Softmax + log + NLL without materializing logits | (See Benchmarks) |
+| `quantized_matmul` | NF4 dequantize + GEMM in one pass | (See Benchmarks) |
 
 ### 🧩 Composable Configuration
 
@@ -298,7 +298,6 @@ forge adapters scan ./my-lora --threshold 10.0 # Spectral anomaly scanning
 | **KTO** | Preference | Kahneman-Tversky optimization (unpaired data) |
 | **ORPO** | Preference | Odds ratio preference optimization (no ref model) |
 | **SimPO** | Preference | Simple preference optimization |
-| **PPO** | RL | Proximal policy optimization with reward model |
 | **Distillation** | Transfer | Knowledge distillation from teacher to student |
 | **Reward Model** | RL | Train a reward model for RLHF |
 | **Unlearn** | Safety | Targeted knowledge removal (GDPR compliance) |
@@ -319,7 +318,10 @@ Built-in offline benchmark suites: MCQ · arithmetic · tool-calling · JSON val
 
 ### 👥 Team Workspaces
 
-Forge supports native team collaboration and Role-Based Access Control (RBAC) powered by a local SQLite engine:
+> [!NOTE]
+> Currently, workspace features are limited to local SQLite bookkeeping. The `invite` command records intent locally but does not currently send emails or sync access across machines. A full backend is planned.
+
+Forge supports tracking team collaboration and Role-Based Access Control (RBAC) via a local SQLite engine:
 
 ```bash
 forge workspace init "Forge Team"           

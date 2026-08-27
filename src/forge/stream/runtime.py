@@ -163,6 +163,7 @@ class StreamRuntime:
             # Retrieve or create a CUDA stream for async DMA
             if not hasattr(self, "_dma_stream"):
                 self._dma_stream = torch.cuda.Stream()
+                self._buffers = [None] * self.plan.num_buffers
 
             layer = self.plan.layers[layer_idx]
 
@@ -197,6 +198,7 @@ class StreamRuntime:
 
                 # Async DMA copy to GPU
                 device_tensor = host_tensor.to("cuda", non_blocking=True)
+                self._buffers[buffer_idx] = device_tensor
 
                 # Record event for compute synchronization
                 event = torch.cuda.Event()
@@ -249,17 +251,26 @@ class StreamSession:
                 name=layer_info.name,
                 size_bytes=layer_info.size_bytes,
                 buffer_idx=i % plan.num_buffers,
+                runtime=self._runtime,
             )
 
 
 class StreamedLayer:
     """A single streamed layer — available for forward/backward pass."""
 
-    def __init__(self, index: int, name: str, size_bytes: int, buffer_idx: int) -> None:
+    def __init__(self, index: int, name: str, size_bytes: int, buffer_idx: int, runtime: StreamRuntime) -> None:
         self.index = index
         self.name = name
         self.size_bytes = size_bytes
         self.buffer_idx = buffer_idx
+        self.runtime = runtime
+        
+    def get_tensor(self):
+        """Wait for the async DMA transfer and return the device tensor."""
+        if hasattr(self.runtime, "_transfer_events") and self.buffer_idx in self.runtime._transfer_events:
+            event = self.runtime._transfer_events[self.buffer_idx]
+            event.wait()
+        return self.runtime._buffers[self.buffer_idx]
 
     @property
     def size_mb(self) -> float:

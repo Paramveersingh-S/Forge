@@ -68,8 +68,10 @@ def generate_bom(adapter_dir: str | Path, base_model: str) -> MLBOM:
                         dataset_hashes[d.path] = f"sha256:{d_hash}"
                     except Exception:
                         dataset_hashes[d.path] = "sha256:unknown"
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to load config for BOM: {e}")
 
     # Try to hash the safetensors file
     adapter_hash = None

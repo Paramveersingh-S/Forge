@@ -68,16 +68,26 @@ def list_methods() -> list[str]:
     return sorted(_REGISTRY.keys())
 
 
-def _ensure_trainers_loaded() -> None:
-    """Import all trainer modules to trigger registration."""
-    if _REGISTRY:
-        return  # Already loaded
+_LOADED = False
 
-    # Import trainer modules — each one calls @register_trainer.
-    # Imports are individual try/except so a missing optional dep
-    _trainer_modules = ["sft", "dpo", "grpo", "kto", "orpo", "ppo", "simpo", "reward"]
+
+def _ensure_trainers_loaded() -> None:
+    """Dynamically load all trainer modules so their decorators execute."""
+    global _LOADED
+    if _LOADED:
+        return
+    _LOADED = True
+
+    import sys
+
+    # These are the submodules in forge.trainer that contain trainers.
+    _trainer_modules = ["sft", "dpo", "orpo", "kto", "grpo", "reward", "simpo"]
     for mod_name in _trainer_modules:
+        mod_path = f"forge.trainer.{mod_name}"
         try:
-            __import__(f"forge.trainer.{mod_name}")
+            if mod_path not in sys.modules:
+                __import__(mod_path)
         except ImportError:
-            pass  # Training stack not installed or method not available
+            # Silently ignore if a trainer file is missing or fails to import
+            # because dependencies (like trl) aren't installed.
+            pass

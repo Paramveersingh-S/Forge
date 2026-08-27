@@ -9,15 +9,14 @@ from forge.trainer.registry import _REGISTRY, get_trainer, list_methods, registe
 class TestTrainerRegistry:
     """Test the decorator-based trainer registry."""
 
-    def setup_method(self) -> None:
-        """Clear registry before each test, but backup first."""
-        self.original_registry = _REGISTRY.copy()
-        _REGISTRY.clear()
-
-    def teardown_method(self) -> None:
-        """Restore original registry."""
-        _REGISTRY.clear()
-        _REGISTRY.update(self.original_registry)
+    @pytest.fixture(autouse=True)
+    def isolate_registry(self):
+        """Isolate the global trainer registry for each test."""
+        from unittest.mock import patch
+        from forge.trainer.registry import _ensure_trainers_loaded
+        _ensure_trainers_loaded()
+        with patch.dict(_REGISTRY, {}, clear=True):
+            yield
 
     def test_register_and_retrieve(self) -> None:
         @register_trainer("test_method")

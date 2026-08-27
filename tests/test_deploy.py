@@ -49,6 +49,6 @@ def test_export_routing(tmp_path: Path):
     assert _export_to_safetensors(tmp_path).endswith("model.safetensors")
 
     # Test gguf exporter
-    gguf_path = export_to_gguf(tmp_path, "q4_k_m")
+    gguf_path = export_to_gguf(tmp_path, "q4_k_m", mock=True)
     assert gguf_path.endswith("model-q4_k_m.gguf")
     assert Path(gguf_path).exists()

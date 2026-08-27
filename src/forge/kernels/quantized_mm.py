@@ -207,11 +207,11 @@ def _triton_quantized_matmul(
         acc = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
 
         for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
-            x = tl.load(x_ptrs, mask=offs_m[:, None] < M & offs_k[None, :] < K, other=0.0)
+            x = tl.load(x_ptrs, mask=(offs_m[:, None] < M) & (offs_k[None, :] < K), other=0.0)
 
             # Load packed weights (uint8)
             qw = tl.load(
-                qw_ptrs, mask=(offs_k[:, None] // 2) < (K // 2) & offs_n[None, :] < N, other=0
+                qw_ptrs, mask=((offs_k[:, None] // 2) < (K // 2)) & (offs_n[None, :] < N), other=0
             )
 
             # Unpack: low nibble vs high nibble

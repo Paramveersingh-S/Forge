@@ -26,11 +26,11 @@ jobs:
         with:
           python-version: "3.11"
           
-      - name: Install hatch
-        run: pip install hatch
+      - name: Install maturin
+        run: pip install maturin
         
       - name: Build wheels and sdist
-        run: hatch build
+        run: maturin build --release --sdist --out dist
         
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

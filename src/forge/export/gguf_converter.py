@@ -3,13 +3,16 @@ import sys
 from pathlib import Path
 
 
-def export_to_gguf(adapter_path: Path, quant_level: str) -> str:
+def export_to_gguf(adapter_path: Path, quant_level: str, mock: bool = False) -> str:
     """Export the adapter to GGUF using gguf python package or llama.cpp if available.
 
     Since llama.cpp natively requires C++ build tools and specific conversion scripts,
     this implementation acts as a wrapper that attempts to convert using the `gguf`
     package if installed, or falls back to a mocked export for demonstration.
     """
+    if not mock:
+        raise NotImplementedError("Real GGUF export is not yet implemented — install llama.cpp's convert script or use --format safetensors")
+
     out_path = adapter_path / f"model-{quant_level}.gguf"
 
     # Try to import gguf library (installed via pip install gguf)

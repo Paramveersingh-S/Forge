@@ -2,13 +2,14 @@ import os
 from pathlib import Path
 
 
-def export_model(adapter_dir: str | Path, output_format: str, quant_level: str = "q4_k_m") -> str:
+def export_model(adapter_dir: str | Path, output_format: str, quant_level: str = "q4_k_m", mock: bool = False) -> str:
     """Export a fine-tuned adapter to a specific format.
 
     Args:
         adapter_dir: Path to the trained adapter.
         output_format: The target format (e.g., 'gguf', 'onnx', 'safetensors').
         quant_level: Quantization level (mainly for GGUF).
+        mock: Whether to allow mock exports.
 
     Returns:
         Path to the exported artifact.
@@ -22,10 +23,14 @@ def export_model(adapter_dir: str | Path, output_format: str, quant_level: str =
     if output_format == "gguf":
         from .gguf_converter import export_to_gguf
 
-        return export_to_gguf(adapter_path, quant_level)
+        return export_to_gguf(adapter_path, quant_level, mock=mock)
     elif output_format == "onnx":
+        if not mock:
+            raise NotImplementedError("Real ONNX export is not yet implemented.")
         return _export_to_onnx(adapter_path)
     elif output_format == "safetensors":
+        if not mock:
+            raise NotImplementedError("Real SafeTensors export is not yet implemented.")
         return _export_to_safetensors(adapter_path)
     else:
         raise ValueError(f"Unsupported export format: {output_format}")

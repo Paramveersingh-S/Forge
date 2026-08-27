@@ -6,6 +6,7 @@ import sys
 
 env = os.environ.copy()
 env["PYTHONIOENCODING"] = "utf-8"
+env["PYTHONUTF8"] = "1"
 
 
 class TestCLI:
@@ -50,6 +51,7 @@ class TestCLI:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            env=env,
         )
         assert result.returncode == 0
         assert "Python" in result.stdout
