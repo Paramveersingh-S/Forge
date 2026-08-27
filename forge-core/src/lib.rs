@@ -31,17 +31,17 @@ fn forge_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(version, m)?)?;
 
     // Stream submodule
-    let stream_mod = PyModule::new(m.py(), "stream")?;
+    let stream_mod = PyModule::new_bound(m.py(), "stream")?;
     stream::register_module(&stream_mod)?;
     m.add_submodule(&stream_mod)?;
 
     // Safetensors submodule
-    let st_mod = PyModule::new(m.py(), "safetensors")?;
+    let st_mod = PyModule::new_bound(m.py(), "safetensors")?;
     safetensors::register_module(&st_mod)?;
     m.add_submodule(&st_mod)?;
 
     // Crypto submodule
-    let crypto_mod = PyModule::new(m.py(), "crypto")?;
+    let crypto_mod = PyModule::new_bound(m.py(), "crypto")?;
     crypto::register_module(&crypto_mod)?;
     m.add_submodule(&crypto_mod)?;
 
