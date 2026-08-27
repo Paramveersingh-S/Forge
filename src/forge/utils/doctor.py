@@ -69,10 +69,10 @@ def run_doctor(console: Console) -> None:
 
     # Rust core
     try:
-        import forge_core
+        from forge import forge_core
 
         table.add_row("forge-core (Rust)", "[green]✓[/green]", forge_core.version())
     except ImportError:
-        table.add_row("forge-core (Rust)", "[yellow]⚠[/yellow]", "Not built — cargo build")
+        table.add_row("forge-core (Rust)", "[red]✗[/red]", "Not installed")
 
     console.print(table)

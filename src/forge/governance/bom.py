@@ -62,7 +62,7 @@ def generate_bom(adapter_dir: str | Path, base_model: str) -> MLBOM:
                 dataset_hashes = {}
                 for d in config.data.datasets:  # type: ignore
                     try:
-                        import forge_core.crypto
+                        from forge import forge_core
 
                         d_hash = forge_core.crypto.sha256_file(str(d.path))
                         dataset_hashes[d.path] = f"sha256:{d_hash}"
@@ -78,7 +78,7 @@ def generate_bom(adapter_dir: str | Path, base_model: str) -> MLBOM:
     adapter_file = adapter_path / "adapter_model.safetensors"
     if adapter_file.exists():
         try:
-            import forge_core.crypto
+            from forge import forge_core
 
             adapter_hash = forge_core.crypto.sha256_file(str(adapter_file))
         except ImportError:

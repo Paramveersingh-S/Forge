@@ -112,6 +112,7 @@ Issues = "https://github.com/Paramveersingh-S/Forge/issues"
 [tool.maturin]
 manifest-path = "forge-core/Cargo.toml"
 python-source = "src"
+module-name = "forge.forge_core"
 
 [tool.ruff]
 target-version = "py310"

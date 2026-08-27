@@ -55,9 +55,9 @@ class StreamRuntime:
 
         # Try Rust core first
         try:
-            import forge_core
+            from forge import forge_core
 
-            # Initialize Rust StreamEngine
+            # Setup config for the rust engine
             config = forge_core.stream.StreamConfig(
                 shard_dir="layers",
                 num_layers=self.plan.total_layers,

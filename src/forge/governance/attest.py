@@ -28,7 +28,7 @@ def sign_bom(bom: MLBOM, private_key_path: str | Path | None = None) -> str:
     bom_json = bom.to_json().encode("utf-8")
 
     try:
-        import forge_core.crypto
+        from forge import forge_core
 
         if hasattr(forge_core.crypto, "sign_message"):
             with open(private_key_path) as f:
@@ -79,7 +79,7 @@ def verify_signature(bom: MLBOM, signature: str, public_key_path: str | Path) ->
         return hmac.compare_digest(signature, expected)
 
     try:
-        import forge_core.crypto
+        from forge import forge_core
 
         if hasattr(forge_core.crypto, "verify_message"):
             with open(public_key_path) as f:
@@ -100,7 +100,7 @@ def _generate_keypair(private_key_path: Path) -> None:
     public_key_path = private_key_path.with_suffix(".pub")
 
     try:
-        import forge_core.crypto
+        from forge import forge_core
 
         if hasattr(forge_core.crypto, "generate_ed25519_keypair"):
             priv_hex, pub_hex = forge_core.crypto.generate_ed25519_keypair()
