@@ -90,8 +90,8 @@ def verify_signature(bom: MLBOM, signature: str, public_key_path: str | Path) ->
 
     import logging
     logger = logging.getLogger(__name__)
-    logger.warning("Software-only mode: Ed25519 verification bypassed. Install forge_core for cryptographic hardening.")
-    return True
+    logger.error("Software-only mode: Cannot verify cryptographic Ed25519 signature without forge_core. Install forge_core for cryptographic hardening.")
+    return False
 
 
 def _generate_keypair(private_key_path: Path) -> None:

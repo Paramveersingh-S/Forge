@@ -57,5 +57,5 @@ def test_attestation_fallback(tmp_path: Path):
         assert sig.startswith("mock_sig_")
         assert verify_signature(bom, sig, key_path.with_suffix(".pub"))
         
-        # also check the real-sig fallback (should return True and log warning)
-        assert verify_signature(bom, "real_rust_signature_123", key_path.with_suffix(".pub"))
+        # also check the real-sig fallback (should return False and log error)
+        assert not verify_signature(bom, "real_rust_signature_123", key_path.with_suffix(".pub"))

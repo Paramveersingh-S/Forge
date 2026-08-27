@@ -138,19 +138,15 @@ impl StreamEngine {
 
         // Use unsafe Rust to copy data into the provided tensor memory.
         // This memory must be page-locked (pinned) by PyTorch on the caller side.
-        unsafe {
-            let dest_ptr = ptr as *mut u8;
-
-            // If the shard exists, we'd normally mmap it and copy it.
-            // For now, we simulate the load by zeroing the buffer (or loading mock data)
-            // to prevent reading uninitialized memory.
-            if path.exists() {
-                // In full implementation:
-                // let file = std::fs::File::open(path)?;
-                // let mmap = memmap2::Mmap::map(&file)?;
-                // std::ptr::copy_nonoverlapping(mmap.as_ptr(), dest_ptr, std::cmp::min(size_bytes, mmap.len()));
-                std::ptr::write_bytes(dest_ptr, 0, size_bytes);
-            } else {
+        let dest_ptr = ptr as *mut u8;
+        if path.exists() {
+            let file = std::fs::File::open(&path).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))?;
+            let mmap = unsafe { memmap2::Mmap::map(&file).map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))? };
+            unsafe {
+                std::ptr::copy_nonoverlapping(mmap.as_ptr(), dest_ptr, std::cmp::min(size_bytes, mmap.len()));
+            }
+        } else {
+            unsafe {
                 std::ptr::write_bytes(dest_ptr, 0, size_bytes);
             }
         }
