@@ -15,7 +15,7 @@ def test_lora_fused_forward():
     scale = 2.0
 
     # Test pure PyTorch fallback
-    out_pt = _pytorch_lora_fused_forward(x, W, A, B, scale)
+    out_pt = _pytorch_lora_fused_forward(x, W, A, B, scale, dropout_p=0.0, training=False)
     
     # Test Triton kernel
     out_triton = lora_fused_forward(x, W, A, B, scale)
@@ -32,8 +32,8 @@ def test_quantized_matmul():
     W_q = torch.randint(0, 256, (K, N // 2), dtype=torch.uint8, device="cuda")
     absmax = torch.ones((K // 64, N), dtype=torch.float16, device="cuda")
 
-    out_pt = _pytorch_quantized_matmul(x, W_q, absmax, block_size=64)
-    out_triton = quantized_matmul(x, W_q, absmax, block_size=64)
+    out_pt = _pytorch_quantized_matmul(x, W_q, absmax, torch.zeros_like(absmax), group_size=64, bits=4)
+    out_triton = quantized_matmul(x, W_q, absmax, torch.zeros_like(absmax), group_size=64, bits=4)
 
     torch.testing.assert_close(out_triton, out_pt, atol=1e-2, rtol=1e-2)
 
@@ -44,7 +44,7 @@ def test_fused_cross_entropy():
     logits = torch.randn((batch * seq, vocab), dtype=torch.float16, device="cuda")
     targets = torch.randint(0, vocab, (batch * seq,), dtype=torch.long, device="cuda")
 
-    loss_pt = _pytorch_chunked_cross_entropy(logits, targets)
+    loss_pt = _pytorch_chunked_cross_entropy(logits, targets, ignore_index=-100, reduction="mean")
     loss_triton = fused_cross_entropy(logits, targets)
 
     torch.testing.assert_close(loss_triton, loss_pt, atol=1e-2, rtol=1e-2)

@@ -39,7 +39,7 @@ def benchmark_lora(M, K, N, R, provider):
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
         ms, min_ms, max_ms = triton.testing.do_bench(
-            lambda: _pytorch_lora_fused_forward(x, W, A, B, scale), quantiles=quantiles
+            lambda: _pytorch_lora_fused_forward(x, W, A, B, scale, dropout_p=0.0, training=False), quantiles=quantiles
         )
         print(f"PyTorch LoRA Peak Memory (M={M}): {torch.cuda.max_memory_allocated() / 1024**2:.2f} MB")
     
@@ -48,7 +48,7 @@ def benchmark_lora(M, K, N, R, provider):
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
         ms, min_ms, max_ms = triton.testing.do_bench(
-            lambda: lora_fused_forward(x, W, A, B, scale), quantiles=quantiles
+            lambda: lora_fused_forward(x, W, A, B, scale, dropout_p=0.0, training=False), quantiles=quantiles
         )
         print(f"Triton LoRA Peak Memory (M={M}): {torch.cuda.max_memory_allocated() / 1024**2:.2f} MB")
 
