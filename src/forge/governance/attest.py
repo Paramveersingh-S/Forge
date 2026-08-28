@@ -59,8 +59,16 @@ def verify_signature(bom: MLBOM, signature: str, public_key_path: str | Path) ->
     if signature.startswith("mock_sig_"):
         # Very insecure mock verification (uses private key as public key)
         # Only for development
-        with open(public_key_path, "rb") as f:
+        
+        # In our mock, the public key is just random bytes, so we need to
+        # find the corresponding private key to verify the HMAC.
+        private_key = public_key_path.with_suffix("")
+        if not private_key.exists():
+            return False
+            
+        with open(private_key, "rb") as f:
             key_bytes = f.read()
+            
         import hashlib
         import hmac
         h = hmac.new(key_bytes, bom_json, hashlib.sha256)
