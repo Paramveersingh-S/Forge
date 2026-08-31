@@ -77,8 +77,7 @@ def _ensure_trainers_loaded() -> None:
 
     # Import trainer modules — each one calls @register_trainer.
     # Imports are individual try/except so a missing optional dep
-    # (e.g. trl without GRPO support) doesn't block other trainers.
-    _trainer_modules = ["sft", "dpo", "grpo", "kto", "orpo"]
+    _trainer_modules = ["sft", "dpo", "grpo", "kto", "orpo", "ppo", "simpo", "reward"]
     for mod_name in _trainer_modules:
         try:
             __import__(f"forge.trainer.{mod_name}")

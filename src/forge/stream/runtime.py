@@ -111,20 +111,47 @@ class StreamRuntime:
             self._prefetch_pytorch(layer_idx, buffer_idx)
 
     def _prefetch_pytorch(self, layer_idx: int, buffer_idx: int) -> None:
-        """PyTorch fallback prefetch using cuda.Stream."""
+        """PyTorch fallback prefetch using cuda.Stream and pinned memory."""
         try:
             import torch
 
             if not torch.cuda.is_available():
+                logger.debug(f"PyTorch prefetch skipped: CUDA not available")
                 return
 
-            # Use a separate CUDA stream for async copy
-            stream = torch.cuda.Stream()
-            with torch.cuda.stream(stream):
-                layer = self.plan.layers[layer_idx]
-                logger.debug(f"  PyTorch async copy: layer {layer_idx} ({len(layer.tensor_names)} tensors)")
+            # Retrieve or create a CUDA stream for async DMA
+            if not hasattr(self, "_dma_stream"):
+                self._dma_stream = torch.cuda.Stream()
+                
+            layer = self.plan.layers[layer_idx]
+            
+            # Simulated host-to-device streaming:
+            # In a full integration, we would mmap the safetensors directly into pinned RAM
+            # and async copy to VRAM buffer pool here.
+            with torch.cuda.stream(self._dma_stream):
+                # Allocate a dummy pinned tensor on host to represent the layer
+                dummy_host_tensor = torch.zeros(
+                    (layer.size_bytes // 4,), dtype=torch.float32
+                ).pin_memory()
+                
+                # Async DMA copy to GPU
+                device_tensor = dummy_host_tensor.to("cuda", non_blocking=True)
+                
+                # Record event for compute synchronization
+                event = torch.cuda.Event()
+                event.record(self._dma_stream)
+                
+                logger.debug(f"  PyTorch DMA queued: layer {layer_idx} ({device_tensor.numel() * 4 / 1e6:.1f} MB)")
+                
+                # Store the event so compute can wait on it
+                if not hasattr(self, "_transfer_events"):
+                    self._transfer_events = {}
+                self._transfer_events[buffer_idx] = event
+                
+        except ImportError:
+            pass
         except Exception as e:
-            logger.debug(f"PyTorch prefetch skipped: {e}")
+            logger.debug(f"PyTorch prefetch failed: {e}")
 
 
 class StreamSession:
